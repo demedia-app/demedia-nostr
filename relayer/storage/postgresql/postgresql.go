@@ -5,11 +5,13 @@ import (
 	"time"
 )
 
+type PeerInfo struct {
+	Address    string
+	LastUpdate time.Time
+}
+
 type PostgresBackend struct {
 	*sqlx.DB
 	DatabaseURL string
-	Map         map[string]struct {
-		Address    string
-		LastUpdate time.Time
-	}
+	Map         map[string]PeerInfo
 }

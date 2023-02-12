@@ -3,10 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/sithumonline/demedia-nostr/hub/ping"
 	"log"
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
+	gorpc "github.com/libp2p/go-libp2p-gorpc"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/nbd-wtf/go-nostr"
 	p2pHost "github.com/sithumonline/demedia-nostr/host"
@@ -99,6 +101,11 @@ func main() {
 	r.host = h
 	hostAddr := p2pHost.GetMultiAddr(h)
 	log.Printf("Hub: listening on %s\n", hostAddr)
+	rpcHost := gorpc.NewServer(h, "/p2p/1.0.0")
+	pingService := ping.NewPingService(&r)
+	if err := rpcHost.Register(pingService); err != nil {
+		log.Fatalf("failed to register rpc server: %v", err)
+	}
 	if err := relayer.Start(&r); err != nil {
 		log.Fatalf("server terminated: %v", err)
 	}

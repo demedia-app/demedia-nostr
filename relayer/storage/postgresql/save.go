@@ -55,8 +55,8 @@ func (b *PostgresBackend) AfterSave(evt *nostr.Event) {
 }
 
 func (b *PostgresBackend) SavePeer(address string, pubkey string) {
-	b.Map[pubkey] = struct {
-		Address    string
-		LastUpdate time.Time
-	}{Address: address, LastUpdate: time.Now()}
+	b.Map[pubkey] = PeerInfo{
+		Address:    address,
+		LastUpdate: time.Now(),
+	}
 }
