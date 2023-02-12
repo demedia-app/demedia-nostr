@@ -13,7 +13,6 @@ import (
 	"github.com/nbd-wtf/go-nostr"
 	p2pHost "github.com/sithumonline/demedia-nostr/host"
 	"github.com/sithumonline/demedia-nostr/keys"
-	"github.com/sithumonline/demedia-nostr/port"
 	"github.com/sithumonline/demedia-nostr/relayer"
 	"github.com/sithumonline/demedia-nostr/relayer/storage/postgresql"
 )
@@ -86,14 +85,16 @@ func main() {
 		log.Fatalf("failed to read from env: %v", err)
 		return
 	}
-	r.storage = &postgresql.PostgresBackend{DatabaseURL: r.PostgresDatabase}
-	p := port.GetTargetAddressPort()
+	r.storage = &postgresql.PostgresBackend{
+		DatabaseURL: r.PostgresDatabase,
+		Map:         map[string]postgresql.PeerInfo{},
+	}
 	_, privKey, _, _, err := keys.GetKeys(r.Hex)
 	if err != nil {
 		log.Fatalf("failed to get priv key for libp2p: %v", err)
 		return
 	}
-	h, err := p2pHost.GetHost(p, *privKey)
+	h, err := p2pHost.GetHost(10880, *privKey)
 	if err != nil {
 		log.Fatalf("failed to get host: %v", err)
 		return
@@ -106,7 +107,8 @@ func main() {
 	if err := rpcHost.Register(pingService); err != nil {
 		log.Fatalf("failed to register rpc server: %v", err)
 	}
-	if err := relayer.Start(&r); err != nil {
+	rs := relayer.Settings{Port: "7448"}
+	if err := relayer.StartConf(rs, &r); err != nil {
 		log.Fatalf("server terminated: %v", err)
 	}
 }

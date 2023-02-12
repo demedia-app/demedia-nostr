@@ -3,24 +3,12 @@ package ping
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"strings"
 
 	"github.com/sithumonline/demedia-nostr/relayer"
 	"github.com/sithumonline/demedia-nostr/relayer/ql"
 )
-
-//type PingArgs struct {
-//	Data []byte
-//}
-//type PingReply struct {
-//	Data []byte
-//}
-//type PeerInfo struct {
-//	Address    string
-//	LastUpdate time.Time
-//}
 
 type PingService struct {
 	relay relayer.Relay
@@ -36,15 +24,12 @@ func (t *PingService) Ping(_ context.Context, argType ql.BridgeArgs, replyType *
 	if err != nil {
 		return err
 	}
-	data := strings.Trim(string(call.Body), "\\\"")
+
+	data := string(call.Body)
 	log.Printf("Received a Ping call, message: %s\n", data)
 
-	adds := strings.Split(data, "/")
-	//t.db[fmt.Sprintf("%s", adds[6])] = PeerInfo{
-	//	Address:    fmt.Sprintf("%s", data),
-	//	LastUpdate: time.Now(),
-	//}
-	t.relay.Storage().SavePeer(fmt.Sprintf("%s", data), fmt.Sprintf("%s", adds[6]))
+	adds := strings.Split(data, ";")
+	t.relay.Storage().SavePeer(adds[1], adds[0])
 
 	replyType.Data = []byte("Pong")
 	return nil
