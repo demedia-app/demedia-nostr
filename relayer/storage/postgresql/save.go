@@ -2,6 +2,7 @@ package postgresql
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/nbd-wtf/go-nostr"
 	"github.com/sithumonline/demedia-nostr/relayer/storage"
@@ -51,4 +52,11 @@ func (b *PostgresBackend) AfterSave(evt *nostr.Event) {
       SELECT created_at FROM event WHERE pubkey = $1
       ORDER BY created_at DESC OFFSET 100 LIMIT 1
     )`, evt.PubKey, evt.Kind)
+}
+
+func (b *PostgresBackend) SavePeer(address string, pubkey string) {
+	b.Map[pubkey] = struct {
+		Address    string
+		LastUpdate time.Time
+	}{Address: address, LastUpdate: time.Now()}
 }

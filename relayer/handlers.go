@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/libp2p/go-libp2p/core/host"
 	"net/http"
 	"time"
 
@@ -174,8 +175,13 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 						return
 					}
 
-					ok, message := AddEvent(s.relay, evt)
-					ws.WriteJSON([]interface{}{"OK", evt.ID, ok, message})
+					if h, ok := s.relay.(host.Host); ok {
+						ok, message := SendEvent(s.relay, evt, h)
+						ws.WriteJSON([]interface{}{"OK", evt.ID, ok, message})
+					} else {
+						ok, message := AddEvent(s.relay, evt)
+						ws.WriteJSON([]interface{}{"OK", evt.ID, ok, message})
+					}
 
 				case "REQ":
 					var id string

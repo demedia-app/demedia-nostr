@@ -78,6 +78,8 @@ type Storage interface {
 	DeleteEvent(id string, pubkey string) error
 	// SaveEvent is called once Relay.AcceptEvent reports true.
 	SaveEvent(event *nostr.Event) error
+	SavePeer(address string, pubkey string)
+	GetPeer(pubkey string) string
 }
 
 // AdvancedQuerier methods are called before and after [Storage.QueryEvents].

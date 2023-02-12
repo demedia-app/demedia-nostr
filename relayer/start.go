@@ -46,9 +46,9 @@ func StartConf(s Settings, relay Relay) error {
 // [Informationer], [CustomWebSocketHandler], [ShutdownAware] and AdvancedXxx types.
 // See their respective doc comments.
 //
-// The basic usage is to call Start or StartConf, which starts serving immediately.
+// The hub usage is to call Start or StartConf, which starts serving immediately.
 // For a more fine-grained control, use NewServer.
-// See [basic/main.go], [whitelisted/main.go], [expensive/main.go] and [rss-bridge/main.go]
+// See [hub/main.go], [whitelisted/main.go], [expensive/main.go] and [rss-bridge/main.go]
 // for example implementations.
 //
 // The following resource is a good starting point for details on what nostr protocol is

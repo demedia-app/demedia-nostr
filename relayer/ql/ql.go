@@ -1,15 +1,14 @@
-package utility
+package ql
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/libp2p/go-libp2p-gorpc"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
-	"github.com/sithumonline/demedia-poc/core/config"
-	"github.com/sithumonline/demedia-poc/peer/transact/bridge"
 )
 
 func QlCall(
@@ -21,46 +20,45 @@ func QlCall(
 	serviceMethod string,
 	method string,
 ) (
-	bridge.BridgeReply,
+	BridgeReply,
 	error,
 ) {
 	body, err := json.Marshal(input)
 	if err != nil {
-		return bridge.BridgeReply{}, fmt.Errorf("QlCall, json marshal input: %w", err)
+		return BridgeReply{}, fmt.Errorf("QlCall, json marshal input: %w", err)
 	}
 
 	ma, err := multiaddr.NewMultiaddr(peerAddr)
 	if err != nil {
-		return bridge.BridgeReply{}, err
+		return BridgeReply{}, err
 	}
 	peerInfo, err := peer.AddrInfoFromP2pAddr(ma)
 	if err != nil {
-		return bridge.BridgeReply{}, err
+		return BridgeReply{}, err
 	}
 
 	err = h.Connect(ctx, *peerInfo)
 	if err != nil {
-		return bridge.BridgeReply{}, fmt.Errorf("QlCall, host connection: \n%w", err)
-		//return bridge.BridgeReply{}, err
+		return BridgeReply{}, fmt.Errorf("QlCall, host connection: \n%w", err)
 	}
-	rpcClient := rpc.NewClient(h, config.ProtocolId)
+	rpcClient := rpc.NewClient(h, "/p2p/1.0.0")
 
-	args, err := json.Marshal(bridge.BridgeCall{Method: method, Body: body})
+	args, err := json.Marshal(BridgeCall{Method: method, Body: body})
 	if err != nil {
-		return bridge.BridgeReply{}, fmt.Errorf("QlCall, json marshal BridgeCall: %w", err)
+		return BridgeReply{}, fmt.Errorf("QlCall, json marshal BridgeCall: %w", err)
 	}
 
-	var reply bridge.BridgeReply
+	var reply BridgeReply
 
 	err = rpcClient.Call(
 		peerInfo.ID,
 		serviceName,
 		serviceMethod,
-		bridge.BridgeArgs{Data: args},
+		BridgeArgs{Data: args},
 		&reply,
 	)
 	if err != nil {
-		return bridge.BridgeReply{}, fmt.Errorf("QlCall, rpcClient call: %w", err)
+		return BridgeReply{}, fmt.Errorf("QlCall, rpcClient call: %w", err)
 	}
 	return reply, nil
 }

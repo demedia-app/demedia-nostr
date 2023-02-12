@@ -7,7 +7,11 @@ import (
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
+	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/nbd-wtf/go-nostr"
+	p2pHost "github.com/sithumonline/demedia-nostr/host"
+	"github.com/sithumonline/demedia-nostr/keys"
+	"github.com/sithumonline/demedia-nostr/port"
 	"github.com/sithumonline/demedia-nostr/relayer"
 	"github.com/sithumonline/demedia-nostr/relayer/storage/postgresql"
 )
@@ -16,6 +20,10 @@ type Relay struct {
 	PostgresDatabase string `envconfig:"POSTGRESQL_DATABASE"`
 
 	storage *postgresql.PostgresBackend
+
+	host host.Host
+
+	Hex string `envconfig:"HEX" default:"fad9c8855b740a0b7ed4c221dbad0f33a83a49cad6b3fe8d5817ac83d38b6a19"`
 }
 
 func (r *Relay) Name() string {
@@ -44,6 +52,19 @@ func (r *Relay) Init() error {
 		}
 	}()
 
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		for range ticker.C {
+			for k, e := range r.storage.Map {
+				ts := time.Now().Sub(e.LastUpdate)
+				tg := 5 * time.Second
+				if ts > tg {
+					delete(r.storage.Map, k)
+				}
+			}
+		}
+	}()
+
 	return nil
 }
 
@@ -64,6 +85,20 @@ func main() {
 		return
 	}
 	r.storage = &postgresql.PostgresBackend{DatabaseURL: r.PostgresDatabase}
+	p := port.GetTargetAddressPort()
+	_, privKey, _, _, err := keys.GetKeys(r.Hex)
+	if err != nil {
+		log.Fatalf("failed to get priv key for libp2p: %v", err)
+		return
+	}
+	h, err := p2pHost.GetHost(p, *privKey)
+	if err != nil {
+		log.Fatalf("failed to get host: %v", err)
+		return
+	}
+	r.host = h
+	hostAddr := p2pHost.GetMultiAddr(h)
+	log.Printf("Hub: listening on %s\n", hostAddr)
 	if err := relayer.Start(&r); err != nil {
 		log.Fatalf("server terminated: %v", err)
 	}
