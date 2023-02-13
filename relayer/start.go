@@ -13,6 +13,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/kelseyhightower/envconfig"
+	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/rs/cors"
 )
 
@@ -23,19 +24,19 @@ type Settings struct {
 }
 
 // Start calls StartConf with Settings parsed from the process environment.
-func Start(relay Relay) error {
+func Start(relay Relay, host host.Host) error {
 	var s Settings
 	if err := envconfig.Process("", &s); err != nil {
 		return fmt.Errorf("envconfig: %w", err)
 	}
-	return StartConf(s, relay)
+	return StartConf(s, relay, host)
 }
 
 // StartConf creates a new Server, passing it host:port for the address,
 // and starts serving propagating any error returned from [Server.Start].
-func StartConf(s Settings, relay Relay) error {
+func StartConf(s Settings, relay Relay, host host.Host) error {
 	addr := net.JoinHostPort(s.Host, s.Port)
-	srv := NewServer(addr, relay)
+	srv := NewServer(addr, relay, host)
 	return srv.Start()
 }
 
@@ -66,17 +67,20 @@ type Server struct {
 	// keep a connection reference to all connected clients for Server.Shutdown
 	clientsMu sync.Mutex
 	clients   map[*websocket.Conn]struct{}
+
+	host host.Host
 }
 
 // NewServer creates a relay server with sensible defaults.
 // The provided address is used to listen and respond to HTTP requests.
-func NewServer(addr string, relay Relay) *Server {
+func NewServer(addr string, relay Relay, host host.Host) *Server {
 	srv := &Server{
 		Log:     defaultLogger(relay.Name() + ": "),
 		addr:    addr,
 		relay:   relay,
 		router:  mux.NewRouter(),
 		clients: make(map[*websocket.Conn]struct{}),
+		host:    host,
 	}
 	srv.router.Path("/").Headers("Upgrade", "websocket").HandlerFunc(srv.handleWebsocket)
 	srv.router.Path("/").Headers("Accept", "application/nostr+json").HandlerFunc(srv.handleNIP11)

@@ -25,7 +25,7 @@ func (t *PingService) Ping(_ context.Context, argType ql.BridgeArgs, replyType *
 		return err
 	}
 
-	data := string(call.Body)
+	data := strings.Trim(string(call.Body), "\\\"")
 	log.Printf("Received a Ping call, message: %s\n", data)
 
 	adds := strings.Split(data, ";")

@@ -9,7 +9,6 @@ import (
 
 	"github.com/kelseyhightower/envconfig"
 	gorpc "github.com/libp2p/go-libp2p-gorpc"
-	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/nbd-wtf/go-nostr"
 	p2pHost "github.com/sithumonline/demedia-nostr/host"
 	"github.com/sithumonline/demedia-nostr/keys"
@@ -21,8 +20,6 @@ type Relay struct {
 	PostgresDatabase string `envconfig:"POSTGRESQL_DATABASE"`
 
 	storage *postgresql.PostgresBackend
-
-	host host.Host
 
 	Hex string `envconfig:"HEX" default:"fad9c8855b740a0b7ed4c221dbad0f33a83a49cad6b3fe8d5817ac83d38b6a19"`
 }
@@ -99,7 +96,6 @@ func main() {
 		log.Fatalf("failed to get host: %v", err)
 		return
 	}
-	r.host = h
 	hostAddr := p2pHost.GetMultiAddr(h)
 	log.Printf("Hub: listening on %s\n", hostAddr)
 	rpcHost := gorpc.NewServer(h, "/p2p/1.0.0")
@@ -108,7 +104,7 @@ func main() {
 		log.Fatalf("failed to register rpc server: %v", err)
 	}
 	rs := relayer.Settings{Port: "7448"}
-	if err := relayer.StartConf(rs, &r); err != nil {
+	if err := relayer.StartConf(rs, &r, h); err != nil {
 		log.Fatalf("server terminated: %v", err)
 	}
 }
