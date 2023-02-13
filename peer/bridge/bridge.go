@@ -33,6 +33,22 @@ func (t *BridgeService) Ql(_ context.Context, argType ql.BridgeArgs, replyType *
 			return err
 		}
 		return t.relay.Storage().SaveEvent(&d)
+	case "queryEvents":
+		var d nostr.Filter
+		err := json.Unmarshal(call.Body, &d)
+		if err != nil {
+			return err
+		}
+		events, err := t.relay.Storage().QueryEvents(&d)
+		if err != nil {
+			return err
+		}
+		b, err := json.Marshal(events)
+		if err != nil {
+			return err
+		}
+		replyType.Data = b
+		return nil
 	default:
 		return errors.New("method not found")
 	}

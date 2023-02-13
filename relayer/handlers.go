@@ -231,7 +231,21 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 							advancedQuerier.BeforeQuery(filter)
 						}
 
-						events, err := store.QueryEvents(filter)
+						var events []nostr.Event
+						if s.host != nil {
+							senders := filter.Authors
+							receivers, _ := filter.Tags["p"]
+							var pubKey string
+							if len(senders) != 0 {
+								pubKey = senders[0]
+							} else {
+								pubKey = receivers[0]
+							}
+							events, err = FetchEvent(pubKey, filter, s.relay, s.host)
+						} else {
+							events, err = store.QueryEvents(filter)
+						}
+
 						if err != nil {
 							s.Log.Errorf("store: %v", err)
 							continue
