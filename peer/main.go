@@ -11,10 +11,12 @@ import (
 
 	"github.com/btcsuite/btcd/btcec/v2/schnorr"
 	"github.com/kelseyhightower/envconfig"
+	gorpc "github.com/libp2p/go-libp2p-gorpc"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/nbd-wtf/go-nostr"
 	p2pHost "github.com/sithumonline/demedia-nostr/host"
 	"github.com/sithumonline/demedia-nostr/keys"
+	"github.com/sithumonline/demedia-nostr/peer/bridge"
 	"github.com/sithumonline/demedia-nostr/port"
 	"github.com/sithumonline/demedia-nostr/relayer"
 	"github.com/sithumonline/demedia-nostr/relayer/ql"
@@ -121,7 +123,12 @@ func main() {
 	r.host = h
 	peerAddr := p2pHost.GetMultiAddr(h)
 	r.PeerAddress = peerAddr.String()
-	log.Printf("Hub: listening on %s\n", peerAddr)
+	log.Printf("Peer: listening on %s\n", peerAddr)
+	rpcHost := gorpc.NewServer(h, "/p2p/1.0.0")
+	bridgeService := bridge.NewBridgeService(&r)
+	if err := rpcHost.Register(bridgeService); err != nil {
+		log.Fatalf("failed to register rpc server: %v", err)
+	}
 	if err := relayer.Start(&r); err != nil {
 		log.Fatalf("server terminated: %v", err)
 	}
