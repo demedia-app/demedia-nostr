@@ -238,7 +238,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 							var pubKey string
 							if len(senders) != 0 {
 								pubKey = senders[0]
-							} else {
+							} else if len(receivers) != 0 {
 								pubKey = receivers[0]
 							}
 							events, err = FetchEvent(pubKey, filter, s.relay, s.host)
