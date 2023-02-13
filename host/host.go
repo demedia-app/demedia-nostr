@@ -2,11 +2,12 @@ package host
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/multiformats/go-multiaddr"
-	"log"
 )
 
 func GetHost(port int, prvKey crypto.PrivKey) (host.Host, error) {
