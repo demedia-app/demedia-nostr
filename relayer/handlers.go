@@ -218,6 +218,17 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 							}
 
 							tag[1] = u
+
+							// gen hash for event as audio url changed
+							h := sha256.New()
+							evtByte, err := evt.MarshalJSON()
+							if err != nil {
+								s.Log.Errorf("failed to marshal event: %v", err)
+								continue
+							}
+							h.Write(evtByte)
+							bs := h.Sum(nil)
+							evt.ID = string(bs)
 						}
 					}
 
