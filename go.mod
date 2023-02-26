@@ -5,7 +5,6 @@ go 1.18
 require (
 	github.com/btcsuite/btcd/btcec/v2 v2.2.0
 	github.com/ethereum/go-ethereum v1.10.26
-	github.com/fiatjaf/relayer v1.7.0
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/imroc/req/v3 v3.32.3

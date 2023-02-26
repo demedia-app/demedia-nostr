@@ -2,7 +2,6 @@ package relayer
 
 import (
 	"fmt"
-	"github.com/fiatjaf/relayer"
 
 	"github.com/nbd-wtf/go-nostr"
 	"github.com/sithumonline/demedia-nostr/relayer/storage"
@@ -10,7 +9,7 @@ import (
 
 func AddEvent(relay Relay, evt nostr.Event) (accepted bool, message string) {
 	store := relay.Storage()
-	advancedSaver, _ := store.(relayer.AdvancedSaver)
+	advancedSaver, _ := store.(AdvancedSaver)
 
 	if !relay.AcceptEvent(&evt) {
 		return false, "blocked: event blocked by relay"
