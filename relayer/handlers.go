@@ -6,10 +6,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/imroc/req/v3"
 	"github.com/nbd-wtf/go-nostr"
 	"github.com/nbd-wtf/go-nostr/nip11"
 	"github.com/nbd-wtf/go-nostr/nip42"
@@ -172,6 +175,50 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 							}
 						}
 						return
+					}
+
+					if evt.Kind == 1 {
+						for _, tag := range evt.Tags {
+							if len(tag) != 2 {
+								continue
+							}
+							if tag[0] != "audio" {
+								continue
+							}
+
+							s.Log.Infof("media tag: %s url: %s", tag[0], tag[1])
+
+							reqClient := req.C()        // Use C() to create a client.
+							resp, err := reqClient.R(). // Use R() to create a request.
+											Get(tag[1])
+							defer resp.Body.Close()
+							if err != nil {
+								s.Log.Errorf("failed to get file from url: %v", err)
+								continue
+							}
+
+							fileBytes, err := io.ReadAll(resp.Body)
+							if err != nil {
+								s.Log.Errorf("failed to h io read: %v", err)
+								continue
+							}
+
+							fileSplit := strings.Split(tag[1], "/")
+							fileName := fmt.Sprintf("hub_%s", fileSplit[len(fileSplit)-1])
+							err = s.blob.SaveFile(fileName, fileBytes)
+							if err != nil {
+								s.Log.Errorf("failed to h save file: %v", err)
+								continue
+							}
+
+							u, err := s.blob.GetFileURL(fileName)
+							if err != nil {
+								s.Log.Errorf("failed to h get url: %v", err)
+								continue
+							}
+
+							tag[1] = u
+						}
 					}
 
 					if s.host != nil {

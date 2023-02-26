@@ -15,6 +15,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/rs/cors"
+	"github.com/sithumonline/demedia-nostr/blob"
 )
 
 // Settings specify initial startup parameters for Start and StartConf.
@@ -24,19 +25,19 @@ type Settings struct {
 }
 
 // Start calls StartConf with Settings parsed from the process environment.
-func Start(relay Relay, host host.Host) error {
+func Start(relay Relay, host host.Host, blob *blob.BlobStorage) error {
 	var s Settings
 	if err := envconfig.Process("", &s); err != nil {
 		return fmt.Errorf("envconfig: %w", err)
 	}
-	return StartConf(s, relay, host)
+	return StartConf(s, relay, host, blob)
 }
 
 // StartConf creates a new Server, passing it host:port for the address,
 // and starts serving propagating any error returned from [Server.Start].
-func StartConf(s Settings, relay Relay, host host.Host) error {
+func StartConf(s Settings, relay Relay, host host.Host, blob *blob.BlobStorage) error {
 	addr := net.JoinHostPort(s.Host, s.Port)
-	srv := NewServer(addr, relay, host)
+	srv := NewServer(addr, relay, host, blob)
 	return srv.Start()
 }
 
@@ -69,11 +70,13 @@ type Server struct {
 	clients   map[*websocket.Conn]struct{}
 
 	host host.Host
+
+	blob *blob.BlobStorage
 }
 
 // NewServer creates a relay server with sensible defaults.
 // The provided address is used to listen and respond to HTTP requests.
-func NewServer(addr string, relay Relay, host host.Host) *Server {
+func NewServer(addr string, relay Relay, host host.Host, blob *blob.BlobStorage) *Server {
 	srv := &Server{
 		Log:     defaultLogger(relay.Name() + ": "),
 		addr:    addr,
@@ -81,6 +84,7 @@ func NewServer(addr string, relay Relay, host host.Host) *Server {
 		router:  mux.NewRouter(),
 		clients: make(map[*websocket.Conn]struct{}),
 		host:    host,
+		blob:    blob,
 	}
 	srv.router.Path("/").Headers("Upgrade", "websocket").HandlerFunc(srv.handleWebsocket)
 	srv.router.Path("/").Headers("Accept", "application/nostr+json").HandlerFunc(srv.handleNIP11)

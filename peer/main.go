@@ -129,7 +129,7 @@ func main() {
 	if err := rpcHost.Register(bridgeService); err != nil {
 		log.Fatalf("failed to register rpc server: %v", err)
 	}
-	if err := relayer.Start(&r, nil); err != nil {
+	if err := relayer.Start(&r, nil, nil); err != nil {
 		log.Fatalf("server terminated: %v", err)
 	}
 }

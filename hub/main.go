@@ -3,14 +3,15 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/sithumonline/demedia-nostr/hub/ping"
 	"log"
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
 	gorpc "github.com/libp2p/go-libp2p-gorpc"
 	"github.com/nbd-wtf/go-nostr"
+	"github.com/sithumonline/demedia-nostr/blob"
 	p2pHost "github.com/sithumonline/demedia-nostr/host"
+	"github.com/sithumonline/demedia-nostr/hub/ping"
 	"github.com/sithumonline/demedia-nostr/keys"
 	"github.com/sithumonline/demedia-nostr/relayer"
 	"github.com/sithumonline/demedia-nostr/relayer/storage/postgresql"
@@ -22,6 +23,10 @@ type Relay struct {
 	storage *postgresql.PostgresBackend
 
 	Hex string `envconfig:"HEX" default:"fad9c8855b740a0b7ed4c221dbad0f33a83a49cad6b3fe8d5817ac83d38b6a19"`
+
+	BlobID string `envconfig:"BLOB_ID" default:"hub"`
+
+	BucketURI string `envconfig:"BUCKET_URI"`
 }
 
 func (r *Relay) Name() string {
@@ -104,7 +109,15 @@ func main() {
 		log.Fatalf("failed to register rpc server: %v", err)
 	}
 	rs := relayer.Settings{Port: "7448"}
-	if err := relayer.StartConf(rs, &r, h); err != nil {
+	cfg := blob.AuditTrail{
+		ID:        r.BlobID,
+		BucketURI: r.BucketURI,
+	}
+	b, err := blob.NewBlobStorage(&cfg)
+	if err != nil {
+		log.Fatalf("failed to up blob: %v", err)
+	}
+	if err := relayer.StartConf(rs, &r, h, b); err != nil {
 		log.Fatalf("server terminated: %v", err)
 	}
 }

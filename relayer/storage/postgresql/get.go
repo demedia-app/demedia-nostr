@@ -8,6 +8,9 @@ import (
 func (b *PostgresBackend) GetPeer(pubkey string) string {
 	address := b.Map[pubkey].Address
 	if address == "" {
+		if len(b.Map) == 0 {
+			return ""
+		}
 		rand.Seed(time.Now().UnixNano())
 		n := rand.Intn(len(b.Map))
 		i := 0
