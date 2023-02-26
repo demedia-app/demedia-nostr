@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/moov-io/cryptfs"
 
 	"gocloud.dev/blob"
@@ -100,7 +102,7 @@ func (bs *BlobStorage) SaveFile(filepath string, data []byte) error {
 		return err
 	}
 
-	w, err := bs.bucket.NewWriter(context.Background(), filepath, nil)
+	w, err := bs.bucket.NewWriter(context.Background(), filepath, bs.GetWriterOptions())
 	if err != nil {
 		return err
 	}
@@ -134,4 +136,18 @@ func (bs *BlobStorage) Delete(filepath string) error {
 
 func (bs *BlobStorage) GetFileURL(filepath string) (string, error) {
 	return bs.bucket.SignedURL(context.Background(), filepath, nil)
+}
+
+func (bs *BlobStorage) GetWriterOptions() *blob.WriterOptions {
+	opts := &blob.WriterOptions{}
+	opts.BeforeWrite(func(i interface{}) bool {
+		p, ok := i.(*s3manager.UploadInput)
+		if !ok {
+			return false
+		}
+		p.ACL = aws.String("public-read")
+		return true
+	})
+
+	return opts
 }
