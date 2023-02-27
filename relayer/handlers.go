@@ -177,7 +177,8 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 						return
 					}
 
-					if evt.Kind == 1 {
+					isEvtChanged := false
+					if evt.Kind == 1 && s.blob != nil {
 						for _, tag := range evt.Tags {
 							if len(tag) != 2 {
 								continue
@@ -218,18 +219,24 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 							}
 
 							tag[1] = u
-
-							// gen hash for event as audio url changed
-							h := sha256.New()
-							evtByte, err := evt.MarshalJSON()
-							if err != nil {
-								s.Log.Errorf("failed to marshal event: %v", err)
-								continue
-							}
-							h.Write(evtByte)
-							bs := h.Sum(nil)
-							evt.ID = string(bs)
+							isEvtChanged = true
 						}
+					}
+
+					if isEvtChanged {
+						// gen hash for event as audio url changed
+						s := fmt.Sprintf("[0,\"%s\",%d,%d,[[\"%s\",\"%s\"]],\"%s\"]",
+							evt.PubKey,
+							evt.CreatedAt.Unix(),
+							evt.Kind,
+							evt.Tags[0][0],
+							evt.Tags[0][1],
+							evt.Content,
+						)
+						h := sha256.New()
+						h.Write([]byte(s))
+						bs := h.Sum(nil)
+						evt.ID = fmt.Sprintf("%x", bs)
 					}
 
 					if s.host != nil {
