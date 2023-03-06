@@ -91,7 +91,7 @@ func main() {
 		DatabaseURL: r.PostgresDatabase,
 		Map:         map[string]postgresql.PeerInfo{},
 	}
-	_, privKey, _, _, err := keys.GetKeys(r.Hex)
+	ecdsaPvtKey, privKey, _, _, err := keys.GetKeys(r.Hex)
 	if err != nil {
 		log.Fatalf("failed to get priv key for libp2p: %v", err)
 		return
@@ -117,7 +117,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to up blob: %v", err)
 	}
-	if err := relayer.StartConf(rs, &r, h, b); err != nil {
+	if err := relayer.StartConf(rs, &r, h, b, ecdsaPvtKey); err != nil {
 		log.Fatalf("server terminated: %v", err)
 	}
 }

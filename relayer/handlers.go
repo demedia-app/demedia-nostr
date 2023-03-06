@@ -16,6 +16,7 @@ import (
 	"github.com/nbd-wtf/go-nostr"
 	"github.com/nbd-wtf/go-nostr/nip11"
 	"github.com/nbd-wtf/go-nostr/nip42"
+	"github.com/sithumonline/demedia-nostr/hashutil"
 	"golang.org/x/exp/slices"
 )
 
@@ -223,9 +224,32 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 						}
 					}
 
-					if isEvtChanged {
-						// gen hash for event as audio url changed
-						s := fmt.Sprintf("[0,\"%s\",%d,%d,[[\"%s\",\"%s\"]],\"%s\"]",
+					isHashAdded := false
+					if evt.Kind == 1 && s.ecdsaPvtKey != nil && (isEvtChanged || len(evt.Tags) == 0) {
+						sig, err := hashutil.GetSing(evt.Content, s.ecdsaPvtKey)
+						if err != nil {
+							s.Log.Errorf("failed to calculate sig: %v", err)
+						} else {
+							evt.Tags = evt.Tags.AppendUnique([]string{"hash", sig, "true"})
+							isHashAdded = true
+						}
+					}
+
+					p := ""
+					if isEvtChanged && isHashAdded {
+						p = fmt.Sprintf("[0,\"%s\",%d,%d,[[\"%s\",\"%s\"],[\"%s\",\"%s\",\"%s\"]],\"%s\"]",
+							evt.PubKey,
+							evt.CreatedAt.Unix(),
+							evt.Kind,
+							evt.Tags[0][0],
+							evt.Tags[0][1],
+							evt.Tags[1][0],
+							evt.Tags[1][1],
+							evt.Tags[1][2],
+							evt.Content,
+						)
+					} else if isEvtChanged {
+						p = fmt.Sprintf("[0,\"%s\",%d,%d,[[\"%s\",\"%s\"]],\"%s\"]",
 							evt.PubKey,
 							evt.CreatedAt.Unix(),
 							evt.Kind,
@@ -233,8 +257,22 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 							evt.Tags[0][1],
 							evt.Content,
 						)
+					} else if isHashAdded {
+						p = fmt.Sprintf("[0,\"%s\",%d,%d,[[\"%s\",\"%s\",\"%s\"]],\"%s\"]",
+							evt.PubKey,
+							evt.CreatedAt.Unix(),
+							evt.Kind,
+							evt.Tags[0][0],
+							evt.Tags[0][1],
+							evt.Tags[0][2],
+							evt.Content,
+						)
+					}
+
+					if p != "" {
+						// gen hash for event as audio url changed
 						h := sha256.New()
-						h.Write([]byte(s))
+						h.Write([]byte(p))
 						bs := h.Sum(nil)
 						evt.ID = fmt.Sprintf("%x", bs)
 					}

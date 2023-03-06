@@ -2,6 +2,7 @@ package relayer
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"fmt"
 	"log"
 	"net"
@@ -25,19 +26,19 @@ type Settings struct {
 }
 
 // Start calls StartConf with Settings parsed from the process environment.
-func Start(relay Relay, host host.Host, blob *blob.BlobStorage) error {
+func Start(relay Relay, host host.Host, blob *blob.BlobStorage, ecdsaPvtKey *ecdsa.PrivateKey) error {
 	var s Settings
 	if err := envconfig.Process("", &s); err != nil {
 		return fmt.Errorf("envconfig: %w", err)
 	}
-	return StartConf(s, relay, host, blob)
+	return StartConf(s, relay, host, blob, ecdsaPvtKey)
 }
 
 // StartConf creates a new Server, passing it host:port for the address,
 // and starts serving propagating any error returned from [Server.Start].
-func StartConf(s Settings, relay Relay, host host.Host, blob *blob.BlobStorage) error {
+func StartConf(s Settings, relay Relay, host host.Host, blob *blob.BlobStorage, ecdsaPvtKey *ecdsa.PrivateKey) error {
 	addr := net.JoinHostPort(s.Host, s.Port)
-	srv := NewServer(addr, relay, host, blob)
+	srv := NewServer(addr, relay, host, blob, ecdsaPvtKey)
 	return srv.Start()
 }
 
@@ -72,19 +73,22 @@ type Server struct {
 	host host.Host
 
 	blob *blob.BlobStorage
+
+	ecdsaPvtKey *ecdsa.PrivateKey
 }
 
 // NewServer creates a relay server with sensible defaults.
 // The provided address is used to listen and respond to HTTP requests.
-func NewServer(addr string, relay Relay, host host.Host, blob *blob.BlobStorage) *Server {
+func NewServer(addr string, relay Relay, host host.Host, blob *blob.BlobStorage, ecdsaPvtKey *ecdsa.PrivateKey) *Server {
 	srv := &Server{
-		Log:     defaultLogger(relay.Name() + ": "),
-		addr:    addr,
-		relay:   relay,
-		router:  mux.NewRouter(),
-		clients: make(map[*websocket.Conn]struct{}),
-		host:    host,
-		blob:    blob,
+		Log:         defaultLogger(relay.Name() + ": "),
+		addr:        addr,
+		relay:       relay,
+		router:      mux.NewRouter(),
+		clients:     make(map[*websocket.Conn]struct{}),
+		host:        host,
+		blob:        blob,
+		ecdsaPvtKey: ecdsaPvtKey,
 	}
 	srv.router.Path("/").Headers("Upgrade", "websocket").HandlerFunc(srv.handleWebsocket)
 	srv.router.Path("/").Headers("Accept", "application/nostr+json").HandlerFunc(srv.handleNIP11)
