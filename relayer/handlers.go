@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -366,6 +367,23 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 						}
 
 						for _, event := range events {
+							if event.Kind == 1 && s.ecdsaPvtKey != nil && len(event.Tags) > 0 {
+								tag := 99
+								if len(event.Tags) == 1 {
+									tag = 0
+								} else if len(event.Tags) == 2 {
+									tag = 1
+								}
+								if tag != 99 && event.Tags[tag][0] == "hash" {
+									b, err := hashutil.GetVerification(event.Tags[tag][1], event.Content, &s.ecdsaPvtKey.PublicKey)
+									if err != nil {
+										s.Log.Errorf("failed to verify sig: %v", err)
+									} else {
+										event.Tags[tag][2] = strconv.FormatBool(b)
+									}
+								}
+							}
+
 							ws.WriteJSON([]interface{}{"EVENT", id, event})
 						}
 					}
