@@ -17,8 +17,9 @@ import (
 	"github.com/nbd-wtf/go-nostr"
 	"github.com/nbd-wtf/go-nostr/nip11"
 	"github.com/nbd-wtf/go-nostr/nip42"
-	"github.com/sithumonline/demedia-nostr/hashutil"
 	"golang.org/x/exp/slices"
+
+	"github.com/sithumonline/demedia-nostr/relayer/hashutil"
 )
 
 // TODO: consider moving these to Server as config params
@@ -227,7 +228,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 
 					isHashAdded := false
 					if evt.Kind == 1 && s.ecdsaPvtKey != nil && (isEvtChanged || len(evt.Tags) == 0) {
-						sig, err := hashutil.GetSing(evt.Content, s.ecdsaPvtKey)
+						sig, err := hashutil.GetSing(hashutil.GetSha256([]byte(evt.Content)), s.ecdsaPvtKey)
 						if err != nil {
 							s.Log.Errorf("failed to calculate sig: %v", err)
 						} else {
@@ -237,44 +238,13 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 					}
 
 					p := ""
-					if isEvtChanged && isHashAdded {
-						p = fmt.Sprintf("[0,\"%s\",%d,%d,[[\"%s\",\"%s\"],[\"%s\",\"%s\",\"%s\"]],\"%s\"]",
-							evt.PubKey,
-							evt.CreatedAt.Unix(),
-							evt.Kind,
-							evt.Tags[0][0],
-							evt.Tags[0][1],
-							evt.Tags[1][0],
-							evt.Tags[1][1],
-							evt.Tags[1][2],
-							evt.Content,
-						)
-					} else if isEvtChanged {
-						p = fmt.Sprintf("[0,\"%s\",%d,%d,[[\"%s\",\"%s\"]],\"%s\"]",
-							evt.PubKey,
-							evt.CreatedAt.Unix(),
-							evt.Kind,
-							evt.Tags[0][0],
-							evt.Tags[0][1],
-							evt.Content,
-						)
-					} else if isHashAdded {
-						p = fmt.Sprintf("[0,\"%s\",%d,%d,[[\"%s\",\"%s\",\"%s\"]],\"%s\"]",
-							evt.PubKey,
-							evt.CreatedAt.Unix(),
-							evt.Kind,
-							evt.Tags[0][0],
-							evt.Tags[0][1],
-							evt.Tags[0][2],
-							evt.Content,
-						)
+					if isEvtChanged || isHashAdded {
+						p = hashutil.StringifyEvent(&evt)
 					}
 
 					if p != "" {
 						// gen hash for event as audio url changed
-						h := sha256.New()
-						h.Write([]byte(p))
-						bs := h.Sum(nil)
+						bs := hashutil.GetSha256([]byte(p))
 						evt.ID = fmt.Sprintf("%x", bs)
 					}
 
@@ -375,11 +345,13 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 									tag = 1
 								}
 								if tag != 99 && event.Tags[tag][0] == "hash" {
-									b, err := hashutil.GetVerification(event.Tags[tag][1], event.Content, &s.ecdsaPvtKey.PublicKey)
+									b, err := hashutil.GetVerification(event.Tags[tag][1], hashutil.GetSha256([]byte(event.Content)), &s.ecdsaPvtKey.PublicKey)
 									if err != nil {
 										s.Log.Errorf("failed to verify sig: %v", err)
 									} else {
 										event.Tags[tag][2] = strconv.FormatBool(b)
+										bs := hashutil.GetSha256([]byte(hashutil.StringifyEvent(&event)))
+										event.ID = fmt.Sprintf("%x", bs)
 									}
 								}
 							}

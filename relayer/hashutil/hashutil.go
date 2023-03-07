@@ -2,10 +2,14 @@ package hashutil
 
 import (
 	"crypto/ecdsa"
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/nbd-wtf/go-nostr"
 )
 
 func GetSing(input interface{}, prv *ecdsa.PrivateKey) (string, error) {
@@ -37,4 +41,24 @@ func GetVerification(encode string, input interface{}, pub *ecdsa.PublicKey) (bo
 
 	verified := crypto.VerifySignature(publicKeyBytes, hash.Bytes(), signatureNoRecoverID)
 	return verified, nil
+}
+
+func GetSha256(p []byte) []byte {
+	h := sha256.New()
+	h.Write(p)
+	return h.Sum(nil)
+}
+
+func StringifyEvent(evt *nostr.Event) string {
+	sx := make([]string, len(evt.Tags))
+	for i, tag := range evt.Tags {
+		sx[i] = fmt.Sprintf("[\"%s\"]", strings.Join(tag, "\",\""))
+	}
+	return fmt.Sprintf("[0,\"%s\",%d,%d,[%s],\"%s\"]",
+		evt.PubKey,
+		evt.CreatedAt.Unix(),
+		evt.Kind,
+		strings.Join(sx, ","),
+		evt.Content,
+	)
 }
