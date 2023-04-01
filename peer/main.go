@@ -17,6 +17,7 @@ import (
 	p2pHost "github.com/sithumonline/demedia-nostr/host"
 	"github.com/sithumonline/demedia-nostr/keys"
 	"github.com/sithumonline/demedia-nostr/peer/bridge"
+	"github.com/sithumonline/demedia-nostr/peer/handler"
 	"github.com/sithumonline/demedia-nostr/port"
 	"github.com/sithumonline/demedia-nostr/relayer"
 	"github.com/sithumonline/demedia-nostr/relayer/ql"
@@ -104,21 +105,18 @@ func main() {
 	r := Relay{}
 	if err := envconfig.Process("", &r); err != nil {
 		log.Fatalf("failed to read from env: %v", err)
-		return
 	}
 	r.storage = &postgresql.PostgresBackend{DatabaseURL: r.PostgresDatabase}
 	p := port.GetTargetAddressPort()
 	_, privKey, btcPvtKey, btcPubKey, err := keys.GetKeys(r.Hex)
 	if err != nil {
 		log.Fatalf("failed to get priv key for libp2p: %v", err)
-		return
 	}
 	r.BtcPubKey = hex.EncodeToString(schnorr.SerializePubKey(btcPubKey))
-	log.Printf("BTC PvtKye: %s", hex.EncodeToString(btcPvtKey.Serialize()))
+	log.Printf("BTC PvtKey: %s", hex.EncodeToString(btcPvtKey.Serialize()))
 	h, err := p2pHost.GetHost(p+1, *privKey)
 	if err != nil {
 		log.Fatalf("failed to get host: %v", err)
-		return
 	}
 	r.host = h
 	peerAddr := p2pHost.GetMultiAddr(h)
@@ -129,6 +127,7 @@ func main() {
 	if err := rpcHost.Register(bridgeService); err != nil {
 		log.Fatalf("failed to register rpc server: %v", err)
 	}
+	go handler.Start(":4000", &r)
 	if err := relayer.Start(&r, nil, nil, nil); err != nil {
 		log.Fatalf("server terminated: %v", err)
 	}
