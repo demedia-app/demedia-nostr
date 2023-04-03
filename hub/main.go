@@ -28,6 +28,8 @@ type Relay struct {
 	BlobID string `envconfig:"BLOB_ID" default:"hub"`
 
 	BucketURI string `envconfig:"BUCKET_URI"`
+
+	WebPort string `envconfig:"WEB_PORT" default:"3030"`
 }
 
 func (r *Relay) Name() string {
@@ -115,7 +117,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to up blob: %v", err)
 	}
-	go handler.Start(":6000", r.storage.Map)
+	go handler.Start(fmt.Sprintf(":%s", r.WebPort), r.storage.Map)
 	if err := relayer.StartConf(rs, &r, h, b, ecdsaPvtKey); err != nil {
 		log.Fatalf("server terminated: %v", err)
 	}

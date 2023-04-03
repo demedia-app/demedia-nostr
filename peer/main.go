@@ -38,6 +38,8 @@ type Relay struct {
 	BtcPubKey string
 
 	Hub string `envconfig:"HUB" default:"/ip4/127.0.0.1/tcp/10881/p2p/16Uiu2HAmP44YB5WWWdYccDYRzByum6fWDma13csdVUcySzwPMqYx"`
+
+	WebPort string `envconfig:"WEB_PORT" default:"4000"`
 }
 
 func (r *Relay) Name() string {
@@ -127,7 +129,7 @@ func main() {
 	if err := rpcHost.Register(bridgeService); err != nil {
 		log.Fatalf("failed to register rpc server: %v", err)
 	}
-	go handler.Start(":4000", &r)
+	go handler.Start(fmt.Sprintf(":%s", r.WebPort), &r)
 	if err := relayer.Start(&r, nil, nil, nil); err != nil {
 		log.Fatalf("server terminated: %v", err)
 	}

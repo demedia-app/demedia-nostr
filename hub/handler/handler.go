@@ -9,6 +9,10 @@ import (
 
 func Start(port string, m map[string]postgresql.PeerInfo) {
 	r := gin.Default()
+	r.Use(func(c *gin.Context) {
+		c.Writer.Header().Add("Access-Control-Allow-Origin", "*")
+		c.Next()
+	})
 
 	v1 := r.Group("/v1")
 	{

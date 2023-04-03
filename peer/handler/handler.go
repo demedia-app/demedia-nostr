@@ -11,6 +11,10 @@ import (
 
 func Start(port string, relay relayer.Relay) {
 	r := gin.Default()
+	r.Use(func(c *gin.Context) {
+		c.Writer.Header().Add("Access-Control-Allow-Origin", "*")
+		c.Next()
+	})
 
 	v1 := r.Group("/v1")
 	{
