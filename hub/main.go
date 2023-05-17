@@ -11,6 +11,7 @@ import (
 	"github.com/nbd-wtf/go-nostr"
 	"github.com/sithumonline/demedia-nostr/blob"
 	p2pHost "github.com/sithumonline/demedia-nostr/host"
+	"github.com/sithumonline/demedia-nostr/hub/handler"
 	"github.com/sithumonline/demedia-nostr/hub/ping"
 	"github.com/sithumonline/demedia-nostr/keys"
 	"github.com/sithumonline/demedia-nostr/relayer"
@@ -27,6 +28,8 @@ type Relay struct {
 	BlobID string `envconfig:"BLOB_ID" default:"hub"`
 
 	BucketURI string `envconfig:"BUCKET_URI"`
+
+	WebPort string `envconfig:"WEB_PORT" default:"3030"`
 }
 
 func (r *Relay) Name() string {
@@ -85,7 +88,6 @@ func main() {
 	r := Relay{}
 	if err := envconfig.Process("", &r); err != nil {
 		log.Fatalf("failed to read from env: %v", err)
-		return
 	}
 	r.storage = &postgresql.PostgresBackend{
 		DatabaseURL: r.PostgresDatabase,
@@ -94,12 +96,10 @@ func main() {
 	ecdsaPvtKey, privKey, _, _, err := keys.GetKeys(r.Hex)
 	if err != nil {
 		log.Fatalf("failed to get priv key for libp2p: %v", err)
-		return
 	}
 	h, err := p2pHost.GetHost(10880, *privKey)
 	if err != nil {
 		log.Fatalf("failed to get host: %v", err)
-		return
 	}
 	hostAddr := p2pHost.GetMultiAddr(h)
 	log.Printf("Hub: listening on %s\n", hostAddr)
@@ -117,6 +117,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to up blob: %v", err)
 	}
+	go handler.Start(fmt.Sprintf(":%s", r.WebPort), r.storage.Map)
 	if err := relayer.StartConf(rs, &r, h, b, ecdsaPvtKey); err != nil {
 		log.Fatalf("server terminated: %v", err)
 	}
