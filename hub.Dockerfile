@@ -7,6 +7,6 @@ RUN go mod tidy
 
 RUN cd hub && make
 
-RUN cp hub/hub-demedia /usr/local/bin/
+RUN cp hub/demedia-hub /usr/local/bin/
 
-ENTRYPOINT ["hub-demedia"]
+ENTRYPOINT ["demedia-hub"]

@@ -7,6 +7,6 @@ RUN go mod tidy
 
 RUN cd peer && make
 
-RUN cp peer/peer-demedia /usr/local/bin/
+RUN cp peer/demedia-peer /usr/local/bin/
 
-ENTRYPOINT ["peer-demedia"]
+ENTRYPOINT ["demedia-peer"]

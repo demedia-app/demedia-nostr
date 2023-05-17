@@ -1,2 +1,2 @@
-hub-demedia: $(shell find .. -name "*.go")
-	CC=$$(which musl-gcc) go build -ldflags='-s -w -linkmode external -extldflags "-static"' -o ./hub-demedia
+demedia-hub: $(shell find .. -name "*.go")
+	CC=$$(which musl-gcc) go build -ldflags='-s -w -linkmode external -extldflags "-static"' -o ./demedia-hub
