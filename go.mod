@@ -8,6 +8,7 @@ require (
 	github.com/btcsuite/btcd/btcec/v2 v2.2.0
 	github.com/ethereum/go-ethereum v1.10.26
 	github.com/gin-gonic/gin v1.7.7
+	github.com/glendc/go-external-ip v0.1.0
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/imroc/req/v3 v3.32.3
@@ -18,6 +19,7 @@ require (
 	github.com/libp2p/go-libp2p-gorpc v0.5.0
 	github.com/moov-io/cryptfs v0.4.0
 	github.com/multiformats/go-multiaddr v0.8.0
+	github.com/multiformats/go-multiaddr-dns v0.3.1
 	github.com/nbd-wtf/go-nostr v0.13.0
 	github.com/rs/cors v1.8.3
 	gocloud.dev v0.28.0
@@ -123,7 +125,6 @@ require (
 	github.com/mr-tron/base58 v1.2.0 // indirect
 	github.com/multiformats/go-base32 v0.1.0 // indirect
 	github.com/multiformats/go-base36 v0.2.0 // indirect
-	github.com/multiformats/go-multiaddr-dns v0.3.1 // indirect
 	github.com/multiformats/go-multiaddr-fmt v0.1.0 // indirect
 	github.com/multiformats/go-multibase v0.1.1 // indirect
 	github.com/multiformats/go-multicodec v0.7.0 // indirect

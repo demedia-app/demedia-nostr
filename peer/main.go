@@ -37,9 +37,13 @@ type Relay struct {
 
 	BtcPubKey string
 
-	Hub string `envconfig:"HUB" default:"/ip4/127.0.0.1/tcp/10881/p2p/16Uiu2HAmP44YB5WWWdYccDYRzByum6fWDma13csdVUcySzwPMqYx"`
+	Hub string `envconfig:"HUB" default:"/ip4/192.168.1.2/tcp/10880/p2p/16Uiu2HAmP44YB5WWWdYccDYRzByum6fWDma13csdVUcySzwPMqYx"`
 
 	WebPort string `envconfig:"WEB_PORT" default:"4000"`
+
+	P2PPort string `envconfig:"P2P_PORT" default:"10880"`
+
+	LocalNet string `envconfig:"LOCAL_NET" default:"1"`
 }
 
 func (r *Relay) Name() string {
@@ -109,14 +113,20 @@ func main() {
 		log.Fatalf("failed to read from env: %v", err)
 	}
 	r.storage = &postgresql.PostgresBackend{DatabaseURL: r.PostgresDatabase}
-	p := port.GetTargetAddressPort()
+	var p string
+	if r.P2PPort == "10880" {
+		p = fmt.Sprintf("%d", port.GetTargetAddressPort())
+	} else {
+		p = r.P2PPort
+	}
 	_, privKey, btcPvtKey, btcPubKey, err := keys.GetKeys(r.Hex)
 	if err != nil {
 		log.Fatalf("failed to get priv key for libp2p: %v", err)
 	}
 	r.BtcPubKey = hex.EncodeToString(schnorr.SerializePubKey(btcPubKey))
 	log.Printf("BTC PvtKey: %s", hex.EncodeToString(btcPvtKey.Serialize()))
-	h, err := p2pHost.GetHost(p+1, *privKey)
+	add := p2pHost.GetAdd(p, r.LocalNet)
+	h, err := p2pHost.GetHost(*privKey, add)
 	if err != nil {
 		log.Fatalf("failed to get host: %v", err)
 	}

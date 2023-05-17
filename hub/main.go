@@ -30,6 +30,12 @@ type Relay struct {
 	BucketURI string `envconfig:"BUCKET_URI"`
 
 	WebPort string `envconfig:"WEB_PORT" default:"3030"`
+
+	P2PPort string `envconfig:"P2P_PORT" default:"10880"`
+
+	RelayPort string `envconfig:"RELAY_PORT" default:"7448"`
+
+	LocalNet string `envconfig:"LOCAL_NET" default:"1"`
 }
 
 func (r *Relay) Name() string {
@@ -97,7 +103,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to get priv key for libp2p: %v", err)
 	}
-	h, err := p2pHost.GetHost(10880, *privKey)
+	add := p2pHost.GetAdd(r.P2PPort, r.LocalNet)
+	h, err := p2pHost.GetHost(*privKey, add)
 	if err != nil {
 		log.Fatalf("failed to get host: %v", err)
 	}
@@ -108,7 +115,7 @@ func main() {
 	if err := rpcHost.Register(pingService); err != nil {
 		log.Fatalf("failed to register rpc server: %v", err)
 	}
-	rs := relayer.Settings{Port: "7448"}
+	rs := relayer.Settings{Port: r.RelayPort}
 	cfg := blob.AuditTrail{
 		ID:        r.BlobID,
 		BucketURI: r.BucketURI,

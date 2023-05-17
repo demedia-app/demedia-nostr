@@ -9,6 +9,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
+	madns "github.com/multiformats/go-multiaddr-dns"
 )
 
 func QlCall(
@@ -32,7 +33,14 @@ func QlCall(
 	if err != nil {
 		return BridgeReply{}, err
 	}
-	peerInfo, err := peer.AddrInfoFromP2pAddr(ma)
+	addrs, err := madns.Resolve(context.Background(), ma)
+	if err != nil {
+		return BridgeReply{}, fmt.Errorf("QlCall, DNS resolve: %w", err)
+	}
+	if len(addrs) != 1 {
+		return BridgeReply{}, fmt.Errorf("QlCall, DNS address count: %d", len(addrs))
+	}
+	peerInfo, err := peer.AddrInfoFromP2pAddr(addrs[0])
 	if err != nil {
 		return BridgeReply{}, err
 	}

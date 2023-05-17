@@ -9,6 +9,4 @@ RUN cd hub && make
 
 RUN cp hub/hub-demedia /usr/local/bin/
 
-EXPOSE 8080
-
 ENTRYPOINT ["hub-demedia"]

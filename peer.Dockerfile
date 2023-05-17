@@ -9,6 +9,4 @@ RUN cd peer && make
 
 RUN cp peer/peer-demedia /usr/local/bin/
 
-EXPOSE 8080
-
 ENTRYPOINT ["peer-demedia"]
