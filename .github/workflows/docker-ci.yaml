@@ -1,8 +1,6 @@
 name: Docker Build And Push To GitHub Packages
 on:
   push:
-    branches:
-      - main
     tags:
       - v*
 
@@ -27,6 +25,7 @@ jobs:
           push: true
           tags: ghcr.io/${{ github.repository }}-hub:${{ github.ref }}
           file: ./hub.Dockerfile
+
     build-peer:
       runs-on: ubuntu-latest
       steps:
