@@ -5,7 +5,7 @@ on:
       - v*
 
 jobs:
-  build-hub:
+  build_hub:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -26,7 +26,7 @@ jobs:
           tags: ghcr.io/${{ github.repository }}-hub:${{ github.ref }}
           file: ./hub.Dockerfile
 
-    build-peer:
+    build_peer:
       runs-on: ubuntu-latest
       steps:
         - uses: actions/checkout@v2
