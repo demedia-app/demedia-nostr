@@ -5,7 +5,7 @@ on:
       - v*
 
 jobs:
-  build_hub:
+  hub:
     name: Build and push hub
     runs-on: ubuntu-latest
     steps:
@@ -27,7 +27,7 @@ jobs:
           tags: ghcr.io/${{ github.repository }}-hub:${{ github.ref }}
           file: ./hub.Dockerfile
 
-    build_peer:
+    peer:
       name: Build and push peer
       runs-on: ubuntu-latest
       steps:
