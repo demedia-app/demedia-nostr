@@ -1,7 +1,10 @@
 name: Docker Build And Push To GitHub Packages
 on:
-  tags:
-    - v2023.*
+  push:
+    branches:
+      - main
+    tags:
+      - v*
 
 jobs:
   build-hub:
