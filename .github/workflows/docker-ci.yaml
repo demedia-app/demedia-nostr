@@ -27,7 +27,7 @@ jobs:
           tags: ghcr.io/${{ github.repository }}-hub:${{ github.ref }}
           file: ./hub.Dockerfile
 
-    peer:
+    client:
       name: Build and push peer
       runs-on: ubuntu-latest
       steps:
