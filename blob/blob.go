@@ -102,7 +102,11 @@ func (bs *BlobStorage) SaveFile(filepath string, data []byte) error {
 		return err
 	}
 
-	w, err := bs.bucket.NewWriter(context.Background(), filepath, &blob.WriterOptions{}) //, bs.GetWriterOptions())
+	w, err := bs.bucket.NewWriter(context.Background(), filepath, &blob.WriterOptions{
+		Metadata: map[string]string{
+			"Cross-Origin-Resource-Policy": "cross-origin",
+		},
+	}) //, bs.GetWriterOptions())
 	if err != nil {
 		return err
 	}
