@@ -102,7 +102,7 @@ func (bs *BlobStorage) SaveFile(filepath string, data []byte) error {
 		return err
 	}
 
-	w, err := bs.bucket.NewWriter(context.Background(), filepath, bs.GetWriterOptions())
+	w, err := bs.bucket.NewWriter(context.Background(), filepath, &blob.WriterOptions{}) //, bs.GetWriterOptions())
 	if err != nil {
 		return err
 	}
