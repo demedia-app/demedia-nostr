@@ -16,12 +16,12 @@ func GetAdd(port string, isLocal string) string {
 	consensus := externalip.DefaultConsensus(nil, nil)
 	parsedIP, err := consensus.ExternalIP()
 	if err != nil {
-		log.Panic(fmt.Errorf("get external ip error: %v", err))
+		err = fmt.Errorf("get external ip error: %v", err)
 	}
 	if isLocal == "1" {
-		addrs, err := net.InterfaceAddrs()
-		if err != nil {
-			log.Panic(fmt.Errorf("get local ip error: %v", err))
+		addrs, er := net.InterfaceAddrs()
+		if er != nil {
+			err = fmt.Errorf("get local ip error: %v", er)
 		}
 		for _, address := range addrs {
 			// check the address type and if it is not a loopback the display it
