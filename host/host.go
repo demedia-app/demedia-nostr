@@ -31,7 +31,7 @@ func GetAdd(port string, isLocal string) string {
 			}
 		}
 	}
-	if err != nil {
+	if err != nil && parsedIP == nil {
 		log.Panic(err)
 	}
 	if parsedIP.To4() != nil {
