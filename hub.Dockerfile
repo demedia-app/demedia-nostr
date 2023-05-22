@@ -7,7 +7,7 @@ RUN go mod tidy
 
 RUN cd hub && make
 
-FROM alpine:3.14
+FROM ubuntu:22.04
 
 RUN apk add --no-cache ca-certificates
 
