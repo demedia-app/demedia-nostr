@@ -195,11 +195,11 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 							reqClient := req.C()        // Use C() to create a client.
 							resp, err := reqClient.R(). // Use R() to create a request.
 											Get(tag[1])
-							defer resp.Body.Close()
 							if err != nil {
 								s.Log.Errorf("failed to get file from url: %v", err)
 								continue
 							}
+							defer resp.Body.Close()
 
 							fileBytes, err := io.ReadAll(resp.Body)
 							if err != nil {
