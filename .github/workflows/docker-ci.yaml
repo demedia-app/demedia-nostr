@@ -24,7 +24,9 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: ghcr.io/${{ github.repository }}-hub:${{ github.sha }}
+          tags: |
+            ghcr.io/${{ github.repository }}-hub:${{ github.sha }}
+            ghcr.io/${{ github.repository }}-hub:latest
           file: ./hub.Dockerfile
 
   peer:
@@ -46,7 +48,9 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: ghcr.io/${{ github.repository }}-peer:${{ github.sha }}
+          tags: |
+            ghcr.io/${{ github.repository }}-peer:${{ github.sha }}
+            ghcr.io/${{ github.repository }}-peer:latest
           file: ./peer.Dockerfile
 
   watchtower:
