@@ -7,9 +7,9 @@ RUN go mod tidy
 
 RUN cd hub && make
 
-FROM ubuntu:22.04
+FROM alpine:3.14
 
-RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
+RUN apk add --no-cache ca-certificates
 
 COPY --from=builder /go/src/app/hub/demedia-hub /usr/local/bin/
 
