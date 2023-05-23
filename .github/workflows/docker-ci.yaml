@@ -48,3 +48,14 @@ jobs:
           push: true
           tags: ghcr.io/${{ github.repository }}-peer:${{ github.sha }}
           file: ./peer.Dockerfile
+
+  watchtower:
+    name: Trigger Watchtower CD
+    needs: [hub, peer]
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Watchtower
+        uses: wei/curl@master
+        with:
+          args: -H "Authorization: Bearer {{ secrets.WATCHTOWER_TOKEN }}" https://api.demedia.app/watchtower/v1/update
