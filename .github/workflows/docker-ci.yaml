@@ -56,6 +56,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Watchtower
-        command:  |
-          apt-get update && apt-get install -y curl
+        run:  |
           cul -H "Authorization: Bearer ${{ secrets.WATCHTOWER_TOKEN }}" https://api.demedia.app/watchtower/v1/update
