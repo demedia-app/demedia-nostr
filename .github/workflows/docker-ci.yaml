@@ -58,4 +58,4 @@ jobs:
       - name: Trigger Watchtower
         uses: wei/curl@master
         with:
-          args: -H 'Authorization: Bearer {{ secrets.WATCHTOWER_TOKEN }}' https://api.demedia.app/watchtower/v1/update
+          args: -H `Authorization: Bearer {{ secrets.WATCHTOWER_TOKEN }}` https://api.demedia.app/watchtower/v1/update
