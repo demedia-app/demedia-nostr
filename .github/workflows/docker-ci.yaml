@@ -57,4 +57,4 @@ jobs:
     steps:
       - name: Trigger Watchtower
         run:  |
-          cul -H "Authorization: Bearer ${{ secrets.WATCHTOWER_TOKEN }}" https://api.demedia.app/watchtower/v1/update
+          curl -H "Authorization: Bearer ${{ secrets.WATCHTOWER_TOKEN }}" https://api.demedia.app/watchtower/v1/update
