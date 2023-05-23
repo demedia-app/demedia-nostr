@@ -48,3 +48,4 @@ export AWS_SECRET_ACCESS_KEY=secretAccessKey
 export BUCKET_URI="s3://codepipeline-ap-south-1-61245200273?region=ap-south-1"
 export POSTGRESQL_DATABASE="postgres://nostr:nostr@0.0.0.0:5432/nostr?sslmode=disable"
 ```
+
