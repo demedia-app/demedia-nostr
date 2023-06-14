@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -16,6 +15,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/rs/cors"
+	"github.com/rs/zerolog"
 	"github.com/sithumonline/demedia-nostr/blob"
 )
 
@@ -77,11 +77,17 @@ type Server struct {
 	ecdsaPvtKey *ecdsa.PrivateKey
 }
 
+// CorrelationHeader defines a default Correlation ID HTTP header.
+const (
+	CorrelationHeader = "X-Correlation-ID"
+	CorrelationKey    = "correlationId"
+)
+
 // NewServer creates a relay server with sensible defaults.
 // The provided address is used to listen and respond to HTTP requests.
 func NewServer(addr string, relay Relay, host host.Host, blob *blob.BlobStorage, ecdsaPvtKey *ecdsa.PrivateKey) *Server {
 	srv := &Server{
-		Log:         defaultLogger(relay.Name() + ": "),
+		Log:         defaultLogger(relay.Name(), "noId"),
 		addr:        addr,
 		relay:       relay,
 		router:      mux.NewRouter(),
@@ -90,6 +96,16 @@ func NewServer(addr string, relay Relay, host host.Host, blob *blob.BlobStorage,
 		blob:        blob,
 		ecdsaPvtKey: ecdsaPvtKey,
 	}
+	srv.router.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			cId := r.Header.Get(CorrelationHeader)
+			if cId == "" {
+				cId = fmt.Sprintf("%d", time.Now().Unix())
+			}
+			srv.Log = defaultLogger(relay.Name(), cId)
+			next.ServeHTTP(w, r)
+		})
+	})
 	srv.router.Path("/").Headers("Upgrade", "websocket").HandlerFunc(srv.handleWebsocket)
 	srv.router.Path("/").Headers("Accept", "application/nostr+json").HandlerFunc(srv.handleNIP11)
 	return srv
@@ -199,14 +215,19 @@ func (s *Server) disconnectAllClients() {
 	}
 }
 
-func defaultLogger(prefix string) Logger {
-	l := log.New(os.Stderr, "", log.LstdFlags|log.Lmsgprefix)
-	l.SetPrefix(prefix)
-	return stdLogger{l}
+func defaultLogger(prefix string, correlationId string) Logger {
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	l := zerolog.New(os.Stdout).With().
+		Timestamp().
+		Str("relay", prefix).
+		Str(CorrelationKey, correlationId).
+		Logger()
+
+	return stdLogger{&l}
 }
 
-type stdLogger struct{ log *log.Logger }
+type stdLogger struct{ log *zerolog.Logger }
 
-func (l stdLogger) Infof(format string, v ...any)    { l.log.Printf(format, v...) }
-func (l stdLogger) Warningf(format string, v ...any) { l.log.Printf(format, v...) }
-func (l stdLogger) Errorf(format string, v ...any)   { l.log.Printf(format, v...) }
+func (l stdLogger) Infof(format string, v ...any)    { l.log.Info().Msgf(format, v...) }
+func (l stdLogger) Warningf(format string, v ...any) { l.log.Warn().Msgf(format, v...) }
+func (l stdLogger) Errorf(format string, v ...any)   { l.log.Error().Msgf(format, v...) }
