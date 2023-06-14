@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/kelseyhightower/envconfig"
@@ -99,9 +100,6 @@ func NewServer(addr string, relay Relay, host host.Host, blob *blob.BlobStorage,
 	srv.router.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			cId := r.Header.Get(CorrelationHeader)
-			if cId == "" {
-				cId = fmt.Sprintf("%d", time.Now().Unix())
-			}
 			srv.Log = defaultLogger(relay.Name(), cId)
 			next.ServeHTTP(w, r)
 		})
@@ -216,6 +214,10 @@ func (s *Server) disconnectAllClients() {
 }
 
 func defaultLogger(prefix string, correlationId string) Logger {
+	if correlationId == "" {
+		correlationId = uuid.New().String()
+	}
+
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	l := zerolog.New(os.Stdout).With().
 		Timestamp().
