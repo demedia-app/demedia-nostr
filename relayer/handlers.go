@@ -45,6 +45,7 @@ var upgrader = websocket.Upgrader{
 }
 
 func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
+	s.Log.Infof("handling websocket request from %s", r.RemoteAddr)
 	store := s.relay.Storage()
 	advancedDeleter, _ := store.(AdvancedDeleter)
 	advancedQuerier, _ := store.(AdvancedQuerier)
@@ -67,7 +68,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 		conn:      conn,
 		challenge: hex.EncodeToString(challenge),
 	}
-
+	s.Log.Infof("challenge: %s", ws.challenge)
 	// reader
 	go func() {
 		defer func() {
@@ -92,8 +93,10 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 		if _, ok := s.relay.(Auther); ok {
 			ws.WriteJSON([]interface{}{"AUTH", ws.challenge})
 		}
-
+		s.Log.Infof("auth challenge sent")
 		for {
+			s.Log = DefaultLogger(s.relay.Name(), "")
+			s.Log.Infof("inside for loop and waiting for message")
 			typ, message, err := conn.ReadMessage()
 			if err != nil {
 				if websocket.IsUnexpectedCloseError(
@@ -113,6 +116,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 			}
 
 			go func(message []byte) {
+				s.Log.Infof("initializing go routine for message")
 				var notice string
 				defer func() {
 					if notice != "" {
@@ -223,6 +227,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 
 							tag[1] = u
 							isEvtChanged = true
+							s.Log.Infof("audio url changed to: %s", u)
 						}
 					}
 
@@ -249,7 +254,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 					}
 
 					if s.host != nil {
-						ok, message := SendEvent(s.relay, evt, s.host)
+						ok, message := SendEvent(s.relay, evt, s.host, s.Log.GetCorrelationId())
 						ws.WriteJSON([]interface{}{"OK", evt.ID, ok, message})
 					} else {
 						ok, message := AddEvent(s.relay, evt)
@@ -315,7 +320,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 							} else if len(receivers) != 0 {
 								pubKey = receivers[0]
 							}
-							events, err = FetchEvent(pubKey, filter, s.relay, s.host)
+							events, err = FetchEvent(pubKey, filter, s.relay, s.host, s.Log.GetCorrelationId())
 						} else {
 							events, err = store.QueryEvents(filter)
 						}

@@ -8,7 +8,7 @@ import (
 	"github.com/sithumonline/demedia-nostr/relayer/ql"
 )
 
-func SendEvent(relay Relay, evt nostr.Event, host host.Host) (accepted bool, message string) {
+func SendEvent(relay Relay, evt nostr.Event, host host.Host, correlationId string) (accepted bool, message string) {
 	store := relay.Storage()
 
 	if !relay.AcceptEvent(&evt) {
@@ -19,7 +19,7 @@ func SendEvent(relay Relay, evt nostr.Event, host host.Host) (accepted bool, mes
 		// do not store ephemeral events
 	} else {
 		address := store.GetPeer(evt.PubKey)
-		_, sandErr := ql.QlCall(host, context.Background(), evt, address, "BridgeService", "Ql", "saveEvent")
+		_, sandErr := ql.QlCall(host, context.Background(), evt, address, "BridgeService", "Ql", "saveEvent", correlationId)
 		if sandErr != nil {
 			return false, fmt.Sprintf("error: failed to sand: %s", sandErr.Error())
 		}

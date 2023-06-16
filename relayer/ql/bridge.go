@@ -8,6 +8,7 @@ type BridgeReply struct {
 }
 
 type BridgeCall struct {
-	Body   []byte
-	Method string
+	Body          []byte
+	Method        string
+	CorrelationId string
 }

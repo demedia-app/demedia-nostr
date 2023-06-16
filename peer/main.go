@@ -47,7 +47,7 @@ type Relay struct {
 }
 
 func (r *Relay) Name() string {
-	return "BasicRelay"
+	return "Peer"
 }
 
 func (r *Relay) Storage() relayer.Storage {
@@ -75,7 +75,7 @@ func (r *Relay) Init() error {
 	go func() {
 		ticker := time.NewTicker(3 * time.Second)
 		for range ticker.C {
-			reply, err := ql.QlCall(r.host, context.Background(), fmt.Sprintf("%s;%s", r.BtcPubKey, r.PeerAddress), r.Hub, "PingService", "Ping", "")
+			reply, err := ql.QlCall(r.host, context.Background(), fmt.Sprintf("%s;%s", r.BtcPubKey, r.PeerAddress), r.Hub, "PingService", "Ping", "", "ping-pong")
 			if err != nil {
 				if strings.Contains(fmt.Sprint(err), "connection refused") {
 					log.Println("connection refused, please check the address")
@@ -89,7 +89,7 @@ func (r *Relay) Init() error {
 					log.Panic(err)
 				}
 			}
-			log.Printf("Respons from hub: %s\n", reply.Data)
+			log.Printf("Response from hub: %s\n", reply.Data)
 			ticker.Reset(5 * time.Second)
 		}
 	}()

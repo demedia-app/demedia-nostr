@@ -61,6 +61,7 @@ type ShutdownAware interface {
 
 // Logger is what [Server] uses to log messages.
 type Logger interface {
+	GetCorrelationId() string
 	Infof(format string, v ...any)
 	Warningf(format string, v ...any)
 	Errorf(format string, v ...any)

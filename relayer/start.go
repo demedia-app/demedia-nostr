@@ -88,7 +88,7 @@ const (
 // The provided address is used to listen and respond to HTTP requests.
 func NewServer(addr string, relay Relay, host host.Host, blob *blob.BlobStorage, ecdsaPvtKey *ecdsa.PrivateKey) *Server {
 	srv := &Server{
-		Log:         defaultLogger(relay.Name(), "noId"),
+		Log:         DefaultLogger(relay.Name(), "no-id"),
 		addr:        addr,
 		relay:       relay,
 		router:      mux.NewRouter(),
@@ -100,7 +100,7 @@ func NewServer(addr string, relay Relay, host host.Host, blob *blob.BlobStorage,
 	srv.router.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			cId := r.Header.Get(CorrelationHeader)
-			srv.Log = defaultLogger(relay.Name(), cId)
+			srv.Log = DefaultLogger(relay.Name(), cId)
 			next.ServeHTTP(w, r)
 		})
 	})
@@ -213,7 +213,7 @@ func (s *Server) disconnectAllClients() {
 	}
 }
 
-func defaultLogger(prefix string, correlationId string) Logger {
+func DefaultLogger(prefix string, correlationId string) Logger {
 	if correlationId == "" {
 		correlationId = uuid.New().String()
 	}
@@ -225,11 +225,20 @@ func defaultLogger(prefix string, correlationId string) Logger {
 		Str(CorrelationKey, correlationId).
 		Logger()
 
-	return stdLogger{&l}
+	return stdLogger{
+		log:           &l,
+		correlationId: &correlationId,
+	}
 }
 
-type stdLogger struct{ log *zerolog.Logger }
+type stdLogger struct {
+	log           *zerolog.Logger
+	correlationId *string
+}
 
+func (l stdLogger) GetCorrelationId() string {
+	return *l.correlationId
+}
 func (l stdLogger) Infof(format string, v ...any)    { l.log.Info().Msgf(format, v...) }
 func (l stdLogger) Warningf(format string, v ...any) { l.log.Warn().Msgf(format, v...) }
 func (l stdLogger) Errorf(format string, v ...any)   { l.log.Error().Msgf(format, v...) }

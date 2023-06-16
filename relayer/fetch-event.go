@@ -10,9 +10,9 @@ import (
 	"github.com/sithumonline/demedia-nostr/relayer/ql"
 )
 
-func FetchEvent(pubKey string, filter *nostr.Filter, relay Relay, host host.Host) (events []nostr.Event, err error) {
+func FetchEvent(pubKey string, filter *nostr.Filter, relay Relay, host host.Host, correlationId string) (events []nostr.Event, err error) {
 	address := relay.Storage().GetPeer(pubKey)
-	reply, sandErr := ql.QlCall(host, context.Background(), filter, address, "BridgeService", "Ql", "queryEvents")
+	reply, sandErr := ql.QlCall(host, context.Background(), filter, address, "BridgeService", "Ql", "queryEvents", correlationId)
 	if sandErr != nil {
 		return nil, fmt.Errorf("error: failed to fetch: %s", sandErr.Error())
 	}
