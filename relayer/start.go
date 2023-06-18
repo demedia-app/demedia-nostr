@@ -81,7 +81,8 @@ type Server struct {
 // CorrelationHeader defines a default Correlation ID HTTP header.
 const (
 	CorrelationHeader = "X-Correlation-ID"
-	CorrelationKey    = "correlationId"
+	CorrelationKey    = "correlation_id"
+	TraceIDKey        = "trace_id"
 )
 
 // NewServer creates a relay server with sensible defaults.
@@ -223,6 +224,7 @@ func DefaultLogger(prefix string, correlationId string) Logger {
 		Timestamp().
 		Str("relay", prefix).
 		Str(CorrelationKey, correlationId).
+		Str(TraceIDKey, correlationId).
 		Logger()
 
 	return stdLogger{
