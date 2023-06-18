@@ -22,6 +22,7 @@ require (
 	github.com/multiformats/go-multiaddr-dns v0.3.1
 	github.com/nbd-wtf/go-nostr v0.13.0
 	github.com/rs/cors v1.8.3
+	github.com/rs/zerolog v1.15.0
 	gocloud.dev v0.28.0
 	golang.org/x/exp v0.0.0-20230212135524-a684f29349b6
 )

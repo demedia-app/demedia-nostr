@@ -24,7 +24,8 @@ func (t *BridgeService) Ql(_ context.Context, argType ql.BridgeArgs, replyType *
 	if err != nil {
 		return err
 	}
-
+	log := relayer.DefaultLogger(t.relay.Name(), call.CorrelationId)
+	log.Infof("Received a Ql call, method: %s\n", call.Method)
 	switch call.Method {
 	case "saveEvent":
 		var d nostr.Event
@@ -32,6 +33,7 @@ func (t *BridgeService) Ql(_ context.Context, argType ql.BridgeArgs, replyType *
 		if err != nil {
 			return err
 		}
+		log.Infof("Received a saveEvent call, event: %s\n", d.ID)
 		return t.relay.Storage().SaveEvent(&d)
 	case "queryEvents":
 		var d nostr.Filter
@@ -39,6 +41,7 @@ func (t *BridgeService) Ql(_ context.Context, argType ql.BridgeArgs, replyType *
 		if err != nil {
 			return err
 		}
+		log.Infof("Received a queryEvents call")
 		events, err := t.relay.Storage().QueryEvents(&d)
 		if err != nil {
 			return err
@@ -48,8 +51,10 @@ func (t *BridgeService) Ql(_ context.Context, argType ql.BridgeArgs, replyType *
 			return err
 		}
 		replyType.Data = b
+		log.Infof("Sending a queryEvents reply")
 		return nil
 	default:
+		log.Infof("Received a call, method: %s\n", call.Method)
 		return errors.New("method not found")
 	}
 }

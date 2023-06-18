@@ -39,7 +39,7 @@ type Relay struct {
 }
 
 func (r *Relay) Name() string {
-	return "BasicRelay"
+	return "Hub"
 }
 
 func (r *Relay) Storage() relayer.Storage {

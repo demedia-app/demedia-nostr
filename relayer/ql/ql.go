@@ -20,6 +20,7 @@ func QlCall(
 	serviceName string,
 	serviceMethod string,
 	method string,
+	correlationId string,
 ) (
 	BridgeReply,
 	error,
@@ -51,7 +52,7 @@ func QlCall(
 	}
 	rpcClient := rpc.NewClient(h, "/p2p/1.0.0")
 
-	args, err := json.Marshal(BridgeCall{Method: method, Body: body})
+	args, err := json.Marshal(BridgeCall{Method: method, Body: body, CorrelationId: correlationId})
 	if err != nil {
 		return BridgeReply{}, fmt.Errorf("QlCall, json marshal BridgeCall: %w", err)
 	}
