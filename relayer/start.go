@@ -223,8 +223,9 @@ func DefaultLogger(prefix string, correlationId string) Logger {
 	l := zerolog.New(os.Stdout).With().
 		Timestamp().
 		Str("relay", prefix).
-		Str(CorrelationKey, correlationId).
-		Str(TraceIDKey, correlationId).
+		Dict("dd", zerolog.Dict().
+			Str(CorrelationKey, correlationId).
+			Str(TraceIDKey, correlationId)).
 		Logger()
 
 	return stdLogger{
