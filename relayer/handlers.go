@@ -18,6 +18,7 @@ import (
 	"github.com/nbd-wtf/go-nostr/nip11"
 	"github.com/nbd-wtf/go-nostr/nip42"
 	"golang.org/x/exp/slices"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
 	"github.com/sithumonline/demedia-nostr/relayer/hashutil"
 )
@@ -45,14 +46,16 @@ var upgrader = websocket.Upgrader{
 }
 
 func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
-	s.Log.Infof("handling websocket request from %s", r.RemoteAddr)
+	span := tracer.StartSpan("handleWebsocket")
+	defer span.Finish()
+	s.Log.Infof("handling websocket request from %s %v", r.RemoteAddr, span)
 	store := s.relay.Storage()
 	advancedDeleter, _ := store.(AdvancedDeleter)
 	advancedQuerier, _ := store.(AdvancedQuerier)
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		s.Log.Errorf("failed to upgrade websocket: %v", err)
+		s.Log.Errorf("failed to upgrade websocket: %v %v", err, span)
 		return
 	}
 	s.clientsMu.Lock()
@@ -68,7 +71,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 		conn:      conn,
 		challenge: hex.EncodeToString(challenge),
 	}
-	s.Log.Infof("challenge: %s", ws.challenge)
+	s.Log.Infof("challenge: %s %v", ws.challenge, span)
 	// reader
 	go func() {
 		defer func() {
@@ -96,7 +99,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 		s.Log.Infof("auth challenge sent")
 		for {
 			s.Log = DefaultLogger(s.relay.Name(), "")
-			s.Log.Infof("inside for loop and waiting for message")
+			s.Log.Infof("inside for loop and waiting for message %v", span)
 			typ, message, err := conn.ReadMessage()
 			if err != nil {
 				if websocket.IsUnexpectedCloseError(
@@ -105,7 +108,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 					websocket.CloseNoStatusReceived, // 1005
 					websocket.CloseAbnormalClosure,  // 1006
 				) {
-					s.Log.Warningf("unexpected close error from %s: %v", r.Header.Get("X-Forwarded-For"), err)
+					s.Log.Warningf("unexpected close error from %s: %v %v", r.Header.Get("X-Forwarded-For"), err, span)
 				}
 				break
 			}
@@ -116,7 +119,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 			}
 
 			go func(message []byte) {
-				s.Log.Infof("initializing go routine for message")
+				s.Log.Infof("initializing go routine for message %v", span)
 				var notice string
 				defer func() {
 					if notice != "" {
@@ -194,20 +197,20 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 								continue
 							}
 
-							s.Log.Infof("media tag: %s url: %s", tag[0], tag[1])
+							s.Log.Infof("media tag: %s url: %s %v", tag[0], tag[1], span)
 
 							reqClient := req.C()        // Use C() to create a client.
 							resp, err := reqClient.R(). // Use R() to create a request.
 											Get(tag[1])
 							if err != nil {
-								s.Log.Errorf("failed to get file from url: %v", err)
+								s.Log.Errorf("failed to get file from url: %v %v", err, span)
 								continue
 							}
 							defer resp.Body.Close()
 
 							fileBytes, err := io.ReadAll(resp.Body)
 							if err != nil {
-								s.Log.Errorf("failed to h io read: %v", err)
+								s.Log.Errorf("failed to h io read: %v %v", err, span)
 								continue
 							}
 
@@ -215,19 +218,19 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 							fileName := fmt.Sprintf("hub_%s", fileSplit[len(fileSplit)-1])
 							err = s.blob.SaveFile(fileName, fileBytes)
 							if err != nil {
-								s.Log.Errorf("failed to h save file: %v", err)
+								s.Log.Errorf("failed to h save file: %v %v", err, span)
 								continue
 							}
 
 							u, err := s.blob.GetFileURL(fileName)
 							if err != nil {
-								s.Log.Errorf("failed to h get url: %v", err)
+								s.Log.Errorf("failed to h get url: %v %v", err, span)
 								continue
 							}
 
 							tag[1] = u
 							isEvtChanged = true
-							s.Log.Infof("audio url changed to: %s", u)
+							s.Log.Infof("audio url changed to: %s %v", u, span)
 						}
 					}
 
@@ -235,7 +238,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 					if evt.Kind == 1 && s.ecdsaPvtKey != nil && (isEvtChanged || len(evt.Tags) == 0) {
 						sig, err := hashutil.GetSing(hashutil.GetSha256([]byte(evt.Content)), s.ecdsaPvtKey)
 						if err != nil {
-							s.Log.Errorf("failed to calculate sig: %v", err)
+							s.Log.Errorf("failed to calculate sig: %v %v", err, span)
 						} else {
 							evt.Tags = evt.Tags.AppendUnique([]string{"hash", sig, "true"})
 							isHashAdded = true
@@ -352,7 +355,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 								if tag != 99 && event.Tags[tag][0] == "hash" {
 									b, err := hashutil.GetVerification(event.Tags[tag][1], hashutil.GetSha256([]byte(event.Content)), &s.ecdsaPvtKey.PublicKey)
 									if err != nil {
-										s.Log.Errorf("failed to verify sig: %v", err)
+										s.Log.Errorf("failed to verify sig: %v %v", err, span)
 									} else {
 										event.Tags[tag][2] = strconv.FormatBool(b)
 										bs := hashutil.GetSha256([]byte(hashutil.StringifyEvent(&event)))
@@ -414,7 +417,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 			case <-ticker.C:
 				err := ws.WriteMessage(websocket.PingMessage, nil)
 				if err != nil {
-					s.Log.Errorf("error writing ping: %v; closing websocket", err)
+					s.Log.Errorf("error writing ping: %v; closing websocket %v", err, span)
 					return
 				}
 			}
