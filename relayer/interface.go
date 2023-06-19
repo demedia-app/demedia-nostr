@@ -65,6 +65,7 @@ type Logger interface {
 	Infof(format string, v ...any)
 	Warningf(format string, v ...any)
 	Errorf(format string, v ...any)
+	Panicf(format string, v ...any)
 }
 
 // Storage is a persistence layer for nostr events handled by a relay.

@@ -245,3 +245,4 @@ func (l stdLogger) GetCorrelationId() string {
 func (l stdLogger) Infof(format string, v ...any)    { l.log.Info().Msgf(format, v...) }
 func (l stdLogger) Warningf(format string, v ...any) { l.log.Warn().Msgf(format, v...) }
 func (l stdLogger) Errorf(format string, v ...any)   { l.log.Error().Msgf(format, v...) }
+func (l stdLogger) Panicf(format string, v ...any)   { l.log.Panic().Msgf(format, v...) }

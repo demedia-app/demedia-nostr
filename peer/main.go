@@ -74,22 +74,23 @@ func (r *Relay) Init() error {
 
 	go func() {
 		ticker := time.NewTicker(3 * time.Second)
+		logger := relayer.DefaultLogger(r.Name(), "ping-pong")
 		for range ticker.C {
 			reply, err := ql.QlCall(r.host, context.Background(), fmt.Sprintf("%s;%s", r.BtcPubKey, r.PeerAddress), r.Hub, "PingService", "Ping", "", "ping-pong")
 			if err != nil {
 				if strings.Contains(fmt.Sprint(err), "connection refused") {
-					log.Println("connection refused, please check the address")
+					logger.Infof("connection refused, please check the address")
 					ticker.Reset(10 * time.Second)
 					continue
 				} else if strings.Contains(fmt.Sprint(err), "dial backoff") {
 					ticker.Reset(15 * time.Second)
-					log.Print(err)
+					logger.Errorf("dial backoff: %v", err)
 					continue
 				} else {
-					log.Panic(err)
+					logger.Panicf("error: %v", err)
 				}
 			}
-			log.Printf("Response from hub: %s\n", reply.Data)
+			logger.Infof("Response from hub: %s\n", reply.Data)
 			ticker.Reset(5 * time.Second)
 		}
 	}()

@@ -3,7 +3,6 @@ package ping
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"strings"
 
 	"github.com/sithumonline/demedia-nostr/relayer"
@@ -26,7 +25,8 @@ func (t *PingService) Ping(_ context.Context, argType ql.BridgeArgs, replyType *
 	}
 
 	data := strings.Trim(string(call.Body), "\\\"")
-	log.Printf("Received a Ping call, message: %s\n", data)
+	logger := relayer.DefaultLogger(t.relay.Name(), "ping-pong")
+	logger.Infof("Received a Ping call, message: %s\n", data)
 
 	adds := strings.Split(data, ";")
 	t.relay.Storage().SavePeer(adds[1], adds[0])
