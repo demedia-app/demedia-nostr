@@ -16,6 +16,7 @@ import (
 	"github.com/sithumonline/demedia-nostr/keys"
 	"github.com/sithumonline/demedia-nostr/relayer"
 	"github.com/sithumonline/demedia-nostr/relayer/storage/postgresql"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 type Relay struct {
@@ -91,6 +92,9 @@ func (r *Relay) AcceptEvent(evt *nostr.Event) bool {
 }
 
 func main() {
+	tracer.Start(tracer.WithServiceName("hub"))
+	defer tracer.Stop()
+
 	r := Relay{}
 	if err := envconfig.Process("", &r); err != nil {
 		log.Fatalf("failed to read from env: %v", err)

@@ -22,6 +22,7 @@ import (
 	"github.com/sithumonline/demedia-nostr/relayer"
 	"github.com/sithumonline/demedia-nostr/relayer/ql"
 	"github.com/sithumonline/demedia-nostr/relayer/storage/postgresql"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 type Relay struct {
@@ -57,6 +58,9 @@ func (r *Relay) Storage() relayer.Storage {
 func (r *Relay) OnInitialized(*relayer.Server) {}
 
 func (r *Relay) Init() error {
+	tracer.Start(tracer.WithServiceName("peer"))
+	defer tracer.Stop()
+
 	err := envconfig.Process("", r)
 	if err != nil {
 		return fmt.Errorf("couldn't process envconfig: %w", err)

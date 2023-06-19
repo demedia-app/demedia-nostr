@@ -82,7 +82,6 @@ type Server struct {
 const (
 	CorrelationHeader = "X-Correlation-ID"
 	CorrelationKey    = "correlation_id"
-	TraceIDKey        = "trace_id"
 )
 
 // NewServer creates a relay server with sensible defaults.
@@ -223,9 +222,7 @@ func DefaultLogger(prefix string, correlationId string) Logger {
 	l := zerolog.New(os.Stdout).With().
 		Timestamp().
 		Str("relay", prefix).
-		Dict("dd", zerolog.Dict().
-			Str(CorrelationKey, correlationId).
-			Str(TraceIDKey, correlationId)).
+		Str(CorrelationKey, correlationId).
 		Logger()
 
 	return stdLogger{
