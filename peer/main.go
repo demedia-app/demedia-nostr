@@ -45,6 +45,10 @@ type Relay struct {
 	P2PPort string `envconfig:"P2P_PORT" default:"10880"`
 
 	LocalNet string `envconfig:"LOCAL_NET" default:"1"`
+
+	Environment string `envconfig:"ENVIRONMENT" default:"development"`
+
+	Version string `envconfig:"VERSION" default:"0.0.1"`
 }
 
 func (r *Relay) Name() string {
@@ -58,9 +62,6 @@ func (r *Relay) Storage() relayer.Storage {
 func (r *Relay) OnInitialized(*relayer.Server) {}
 
 func (r *Relay) Init() error {
-	tracer.Start(tracer.WithServiceName("peer"))
-	defer tracer.Stop()
-
 	err := envconfig.Process("", r)
 	if err != nil {
 		return fmt.Errorf("couldn't process envconfig: %w", err)
@@ -117,6 +118,8 @@ func main() {
 	if err := envconfig.Process("", &r); err != nil {
 		log.Fatalf("failed to read from env: %v", err)
 	}
+	tracer.Start(tracer.WithServiceName("peer"), tracer.WithEnv(r.Environment), tracer.WithServiceVersion(r.Version))
+	defer tracer.Stop()
 	r.storage = &postgresql.PostgresBackend{DatabaseURL: r.PostgresDatabase}
 	var p string
 	if r.P2PPort == "10880" {

@@ -37,6 +37,10 @@ type Relay struct {
 	RelayPort string `envconfig:"RELAY_PORT" default:"7448"`
 
 	LocalNet string `envconfig:"LOCAL_NET" default:"1"`
+
+	Environment string `envconfig:"ENVIRONMENT" default:"development"`
+
+	Version string `envconfig:"VERSION" default:"0.0.1"`
 }
 
 func (r *Relay) Name() string {
@@ -92,13 +96,12 @@ func (r *Relay) AcceptEvent(evt *nostr.Event) bool {
 }
 
 func main() {
-	tracer.Start(tracer.WithServiceName("hub"))
-	defer tracer.Stop()
-
 	r := Relay{}
 	if err := envconfig.Process("", &r); err != nil {
 		log.Fatalf("failed to read from env: %v", err)
 	}
+	tracer.Start(tracer.WithServiceName("peer"), tracer.WithEnv(r.Environment), tracer.WithServiceVersion(r.Version))
+	defer tracer.Stop()
 	r.storage = &postgresql.PostgresBackend{
 		DatabaseURL: r.PostgresDatabase,
 		Map:         map[string]postgresql.PeerInfo{},
