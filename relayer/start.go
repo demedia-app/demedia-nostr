@@ -11,13 +11,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/rs/cors"
 	"github.com/rs/zerolog"
 	"github.com/sithumonline/demedia-nostr/blob"
+	muxtrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/gorilla/mux"
 )
 
 // Settings specify initial startup parameters for Start and StartConf.
@@ -64,7 +64,7 @@ type Server struct {
 
 	addr       string
 	relay      Relay
-	router     *mux.Router
+	router     *muxtrace.Router
 	httpServer *http.Server // set at Server.Start
 
 	// keep a connection reference to all connected clients for Server.Shutdown
@@ -91,7 +91,7 @@ func NewServer(addr string, relay Relay, host host.Host, blob *blob.BlobStorage,
 		Log:         DefaultLogger(relay.Name(), "no-id"),
 		addr:        addr,
 		relay:       relay,
-		router:      mux.NewRouter(),
+		router:      muxtrace.NewRouter(),
 		clients:     make(map[*websocket.Conn]struct{}),
 		host:        host,
 		blob:        blob,
@@ -114,7 +114,7 @@ func NewServer(addr string, relay Relay, host host.Host, blob *blob.BlobStorage,
 //
 // In a larger system, where the relay server is not the only HTTP handler,
 // prefer using s as http.Handler instead of the returned router.
-func (s *Server) Router() *mux.Router {
+func (s *Server) Router() *muxtrace.Router {
 	return s.router
 }
 
