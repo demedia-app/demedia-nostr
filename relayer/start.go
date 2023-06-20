@@ -259,3 +259,14 @@ func (l stdLogger) ErrorfWithContext(ctx context.Context, format string, v ...an
 func (l stdLogger) PanicfWithContext(ctx context.Context, format string, v ...any) {
 	l.log.WithContext(ctx).Panicf(format, v...)
 }
+
+func (l stdLogger) CustomLevel(level string, format string, v ...any) {
+	logger := l.log
+	logger.SetFormatter(&log.JSONFormatter{
+		FieldMap: log.FieldMap{
+			log.FieldKeyLevel: level,
+		},
+	})
+
+	logger.Infof(format, v...)
+}

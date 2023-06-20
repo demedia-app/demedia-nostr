@@ -10,7 +10,6 @@ require (
 	github.com/gin-gonic/gin v1.7.7
 	github.com/glendc/go-external-ip v0.1.0
 	github.com/google/uuid v1.3.0
-	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/imroc/req/v3 v3.32.3
 	github.com/jmoiron/sqlx v1.3.5
@@ -23,7 +22,7 @@ require (
 	github.com/multiformats/go-multiaddr-dns v0.3.1
 	github.com/nbd-wtf/go-nostr v0.13.0
 	github.com/rs/cors v1.8.3
-	github.com/rs/zerolog v1.15.0
+	github.com/sirupsen/logrus v1.8.1
 	gocloud.dev v0.28.0
 	golang.org/x/exp v0.0.0-20230212135524-a684f29349b6
 	gopkg.in/DataDog/dd-trace-go.v1 v1.51.0
@@ -101,6 +100,7 @@ require (
 	github.com/google/wire v0.5.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.7.0 // indirect
+	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/huin/goupnp v1.0.3 // indirect
