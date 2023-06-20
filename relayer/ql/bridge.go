@@ -11,6 +11,5 @@ type BridgeCall struct {
 	Body          []byte
 	Method        string
 	CorrelationId string
-	SpanID        uint64
-	TraceID       uint64
+	DDCarrier     map[string]string
 }

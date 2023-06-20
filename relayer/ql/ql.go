@@ -56,8 +56,9 @@ func QlCall(
 
 	bCall := BridgeCall{Method: method, Body: body, CorrelationId: correlationId}
 	if span != nil {
-		bCall.SpanID = span.Context().SpanID()
-		bCall.TraceID = span.Context().TraceID()
+		carrier := tracer.TextMapCarrier(make(map[string]string))
+		tracer.Inject(span.Context(), carrier)
+		bCall.DDCarrier = carrier
 	}
 
 	args, err := json.Marshal(bCall)

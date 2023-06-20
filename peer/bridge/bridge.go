@@ -24,7 +24,8 @@ func (t *BridgeService) Ql(ctx context.Context, argType ql.BridgeArgs, replyType
 	if err != nil {
 		return err
 	}
-	span, ctx := tracer.StartSpanFromContext(ctx, "ql.method", tracer.WithSpanID(call.SpanID))
+	sctx, _ := tracer.Extract(call.DDCarrier)
+	span := tracer.StartSpan("ql.method", tracer.ChildOf(sctx))
 	defer span.Finish()
 	log := relayer.DefaultLogger(t.relay.Name(), call.CorrelationId)
 	log.InfofWithContext(span.Context(), "Received a Ql call, method: %s", call.Method)
