@@ -118,7 +118,7 @@ func main() {
 	if err := envconfig.Process("", &r); err != nil {
 		log.Fatalf("failed to read from env: %v", err)
 	}
-	tracer.Start(tracer.WithServiceName("peer"), tracer.WithEnv(r.Environment), tracer.WithServiceVersion(r.Version))
+	tracer.Start(tracer.WithServiceName(r.Name()), tracer.WithEnv(r.Environment), tracer.WithServiceVersion(r.Version))
 	defer tracer.Stop()
 	r.storage = &postgresql.PostgresBackend{DatabaseURL: r.PostgresDatabase}
 	var p string
