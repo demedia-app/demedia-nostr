@@ -15,9 +15,10 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/rs/cors"
-	"github.com/rs/zerolog"
+	log "github.com/sirupsen/logrus"
 	"github.com/sithumonline/demedia-nostr/blob"
 	muxtrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/gorilla/mux"
+	dd_log "gopkg.in/DataDog/dd-trace-go.v1/contrib/sirupsen/logrus"
 )
 
 // Settings specify initial startup parameters for Start and StartConf.
@@ -218,28 +219,43 @@ func DefaultLogger(prefix string, correlationId string) Logger {
 		correlationId = uuid.New().String()
 	}
 
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	l := zerolog.New(os.Stdout).With().
-		Timestamp().
-		Str("relay", prefix).
-		Str(CorrelationKey, correlationId).
-		Logger()
+	l := log.New()
+	l.Out = os.Stdout
+	l.SetFormatter(&log.JSONFormatter{})
+	l.AddHook(&dd_log.DDContextLogHook{})
+	l.WithFields(log.Fields{
+		"relay":        prefix,
+		CorrelationKey: correlationId,
+	})
 
 	return stdLogger{
-		log:           &l,
+		log:           l,
 		correlationId: &correlationId,
 	}
 }
 
 type stdLogger struct {
-	log           *zerolog.Logger
+	log           *log.Logger
 	correlationId *string
 }
 
 func (l stdLogger) GetCorrelationId() string {
 	return *l.correlationId
 }
-func (l stdLogger) Infof(format string, v ...any)    { l.log.Info().Msgf(format, v...) }
-func (l stdLogger) Warningf(format string, v ...any) { l.log.Warn().Msgf(format, v...) }
-func (l stdLogger) Errorf(format string, v ...any)   { l.log.Error().Msgf(format, v...) }
-func (l stdLogger) Panicf(format string, v ...any)   { l.log.Panic().Msgf(format, v...) }
+func (l stdLogger) Infof(format string, v ...any)    { l.log.Infof(format, v...) }
+func (l stdLogger) Warningf(format string, v ...any) { l.log.Warnf(format, v...) }
+func (l stdLogger) Errorf(format string, v ...any)   { l.log.Errorf(format, v...) }
+func (l stdLogger) Panicf(format string, v ...any)   { l.log.Panicf(format, v...) }
+
+func (l stdLogger) InfofWithContext(ctx context.Context, format string, v ...any) {
+	l.log.WithContext(ctx).Infof(format, v...)
+}
+func (l stdLogger) WarningfWithContext(ctx context.Context, format string, v ...any) {
+	l.log.WithContext(ctx).Warnf(format, v...)
+}
+func (l stdLogger) ErrorfWithContext(ctx context.Context, format string, v ...any) {
+	l.log.WithContext(ctx).Errorf(format, v...)
+}
+func (l stdLogger) PanicfWithContext(ctx context.Context, format string, v ...any) {
+	l.log.WithContext(ctx).Panicf(format, v...)
+}
