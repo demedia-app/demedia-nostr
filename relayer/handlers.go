@@ -74,6 +74,8 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 	s.Log.InfofWithContext(ctx, "challenge: %s", ws.challenge)
 	// reader
 	go func() {
+		span, ctx := tracer.StartSpanFromContext(ctx, "handleWebsocket.reader")
+		defer span.Finish()
 		defer func() {
 			ticker.Stop()
 			s.clientsMu.Lock()
@@ -98,6 +100,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 		}
 		s.Log.InfofWithContext(ctx, "auth challenge sent")
 		for {
+			span, ctx := tracer.StartSpanFromContext(ctx, "handleWebsocket.reader.for")
 			s.Log = DefaultLogger(s.relay.Name(), "")
 			s.Log.InfofWithContext(ctx, "inside for loop and waiting for message")
 			typ, message, err := conn.ReadMessage()
@@ -119,6 +122,8 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 			}
 
 			go func(message []byte) {
+				span, ctx := tracer.StartSpanFromContext(ctx, "handleWebsocket.reader.for.go")
+				defer span.Finish()
 				s.Log.InfofWithContext(ctx, "initializing go routine for message")
 				var notice string
 				defer func() {
@@ -402,6 +407,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			}(message)
+			span.Finish()
 		}
 	}()
 
