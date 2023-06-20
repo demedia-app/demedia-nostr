@@ -26,7 +26,7 @@ func (t *PingService) Ping(_ context.Context, argType ql.BridgeArgs, replyType *
 
 	data := strings.Trim(string(call.Body), "\\\"")
 	logger := relayer.DefaultLogger(t.relay.Name(), "ping-pong")
-	logger.CustomLevel("ping", "Received a Ping call, message: %s\n", data)
+	logger.CustomLevel("ping", "Received a Ping call, message: %s", data)
 
 	adds := strings.Split(data, ";")
 	t.relay.Storage().SavePeer(adds[1], adds[0])

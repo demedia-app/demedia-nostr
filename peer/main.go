@@ -95,7 +95,7 @@ func (r *Relay) Init() error {
 					logger.Panicf("error: %v", err)
 				}
 			}
-			logger.CustomLevel("ping", "Response from hub: %s\n", reply.Data)
+			logger.CustomLevel("ping", "Response from hub: %s", reply.Data)
 			ticker.Reset(5 * time.Second)
 		}
 	}()
