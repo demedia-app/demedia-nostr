@@ -19,6 +19,7 @@ import (
 	"github.com/sithumonline/demedia-nostr/blob"
 	muxtrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/gorilla/mux"
 	dd_log "gopkg.in/DataDog/dd-trace-go.v1/contrib/sirupsen/logrus"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
 )
 
 // Settings specify initial startup parameters for Start and StartConf.
@@ -247,17 +248,29 @@ func (l stdLogger) Warningf(format string, v ...any) { l.log.Warnf(format, v...)
 func (l stdLogger) Errorf(format string, v ...any)   { l.log.Errorf(format, v...) }
 func (l stdLogger) Panicf(format string, v ...any)   { l.log.Panicf(format, v...) }
 
-func (l stdLogger) InfofWithContext(ctx context.Context, format string, v ...any) {
-	l.log.WithContext(ctx).Infof(format, v...)
+func (l stdLogger) InfofWithContext(ctx ddtrace.SpanContext, format string, v ...any) {
+	l.log.WithFields(log.Fields{
+		"dd.trace_id": ctx.TraceID(),
+		"dd.span_id":  ctx.SpanID(),
+	}).Infof(format, v...)
 }
-func (l stdLogger) WarningfWithContext(ctx context.Context, format string, v ...any) {
-	l.log.WithContext(ctx).Warnf(format, v...)
+func (l stdLogger) WarningfWithContext(ctx ddtrace.SpanContext, format string, v ...any) {
+	l.log.WithFields(log.Fields{
+		"dd.trace_id": ctx.TraceID(),
+		"dd.span_id":  ctx.SpanID(),
+	}).Warnf(format, v...)
 }
-func (l stdLogger) ErrorfWithContext(ctx context.Context, format string, v ...any) {
-	l.log.WithContext(ctx).Errorf(format, v...)
+func (l stdLogger) ErrorfWithContext(ctx ddtrace.SpanContext, format string, v ...any) {
+	l.log.WithFields(log.Fields{
+		"dd.trace_id": ctx.TraceID(),
+		"dd.span_id":  ctx.SpanID(),
+	}).Errorf(format, v...)
 }
-func (l stdLogger) PanicfWithContext(ctx context.Context, format string, v ...any) {
-	l.log.WithContext(ctx).Panicf(format, v...)
+func (l stdLogger) PanicfWithContext(ctx ddtrace.SpanContext, format string, v ...any) {
+	l.log.WithFields(log.Fields{
+		"dd.trace_id": ctx.TraceID(),
+		"dd.span_id":  ctx.SpanID(),
+	}).Panicf(format, v...)
 }
 
 func (l stdLogger) CustomLevel(level string, format string, v ...any) {

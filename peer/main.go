@@ -81,7 +81,7 @@ func (r *Relay) Init() error {
 		ticker := time.NewTicker(3 * time.Second)
 		logger := relayer.DefaultLogger(r.Name(), "ping-pong")
 		for range ticker.C {
-			reply, err := ql.QlCall(r.host, context.Background(), fmt.Sprintf("%s;%s", r.BtcPubKey, r.PeerAddress), r.Hub, "PingService", "Ping", "", "ping-pong")
+			reply, err := ql.QlCall(r.host, context.Background(), fmt.Sprintf("%s;%s", r.BtcPubKey, r.PeerAddress), r.Hub, "PingService", "Ping", "", "ping-pong", nil)
 			if err != nil {
 				if strings.Contains(fmt.Sprint(err), "connection refused") {
 					logger.Infof("connection refused, please check the address")

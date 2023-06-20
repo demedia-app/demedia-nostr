@@ -6,6 +6,7 @@ import (
 
 	"github.com/nbd-wtf/go-nostr"
 	"github.com/nbd-wtf/go-nostr/nip11"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
 )
 
 // Relay is the main interface for implementing a nostr relay.
@@ -67,10 +68,10 @@ type Logger interface {
 	Errorf(format string, v ...any)
 	Panicf(format string, v ...any)
 
-	InfofWithContext(ctx context.Context, format string, v ...any)
-	WarningfWithContext(ctx context.Context, format string, v ...any)
-	ErrorfWithContext(ctx context.Context, format string, v ...any)
-	PanicfWithContext(ctx context.Context, format string, v ...any)
+	InfofWithContext(ctx ddtrace.SpanContext, format string, v ...any)
+	WarningfWithContext(ctx ddtrace.SpanContext, format string, v ...any)
+	ErrorfWithContext(ctx ddtrace.SpanContext, format string, v ...any)
+	PanicfWithContext(ctx ddtrace.SpanContext, format string, v ...any)
 
 	CustomLevel(level string, format string, v ...any)
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
 	madns "github.com/multiformats/go-multiaddr-dns"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 func QlCall(
@@ -21,6 +22,7 @@ func QlCall(
 	serviceMethod string,
 	method string,
 	correlationId string,
+	span tracer.Span,
 ) (
 	BridgeReply,
 	error,
@@ -52,7 +54,7 @@ func QlCall(
 	}
 	rpcClient := rpc.NewClient(h, "/p2p/1.0.0")
 
-	args, err := json.Marshal(BridgeCall{Method: method, Body: body, CorrelationId: correlationId})
+	args, err := json.Marshal(BridgeCall{Method: method, Body: body, CorrelationId: correlationId, Span: span})
 	if err != nil {
 		return BridgeReply{}, fmt.Errorf("QlCall, json marshal BridgeCall: %w", err)
 	}
