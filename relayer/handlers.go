@@ -262,7 +262,9 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 					}
 
 					if s.host != nil {
+						s.Log.InfofWithContext(ctx, "initializing send event to peer")
 						ok, message := SendEvent(s.relay, evt, s.host, s.Log.GetCorrelationId(), ctx)
+						s.Log.InfofWithContext(ctx, "completed send event to peer")
 						ws.WriteJSON([]interface{}{"OK", evt.ID, ok, message})
 					} else {
 						ok, message := AddEvent(s.relay, evt)
@@ -328,7 +330,9 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 							} else if len(receivers) != 0 {
 								pubKey = receivers[0]
 							}
+							s.Log.InfofWithContext(ctx, "fetching events from peer")
 							events, err = FetchEvent(pubKey, filter, s.relay, s.host, s.Log.GetCorrelationId(), ctx)
+							s.Log.InfofWithContext(ctx, "completed fetching events from peer")
 						} else {
 							events, err = store.QueryEvents(filter)
 						}
