@@ -71,6 +71,8 @@ type Logger interface {
 	WarningfWithContext(ctx context.Context, format string, v ...any)
 	ErrorfWithContext(ctx context.Context, format string, v ...any)
 	PanicfWithContext(ctx context.Context, format string, v ...any)
+
+	CustomLevel(level string, format string, v ...any)
 }
 
 // Storage is a persistence layer for nostr events handled by a relay.
