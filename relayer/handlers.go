@@ -46,7 +46,8 @@ var upgrader = websocket.Upgrader{
 }
 
 func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
-	span := tracer.StartSpan("handleWebsocket")
+	sctx, _ := tracer.SpanFromContext(r.Context())
+	span := tracer.StartSpan("handleWebsocket", tracer.ChildOf(sctx.Context()))
 	defer span.Finish()
 	s.Log.InfofWithContext(r.Context(), "handling websocket request from %s", r.RemoteAddr)
 	store := s.relay.Storage()
