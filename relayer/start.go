@@ -262,7 +262,6 @@ func (l stdLogger) PanicfWithContext(ctx context.Context, format string, v ...an
 
 func (l stdLogger) CustomLevel(level string, format string, v ...any) {
 	l.log.WithFields(log.Fields{
-		"level": level,
-		"msg":   fmt.Sprintf(format, v...),
-	}).Println()
+		"kind": level,
+	}).Infof(format, v...)
 }
