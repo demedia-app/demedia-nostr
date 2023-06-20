@@ -24,7 +24,10 @@ func (t *BridgeService) Ql(ctx context.Context, argType ql.BridgeArgs, replyType
 	if err != nil {
 		return err
 	}
-	sctx, _ := tracer.Extract(call.DDCarrier)
+	sctx, err := tracer.Extract(call.DDCarrier)
+	if err != nil {
+		return err
+	}
 	span := tracer.StartSpan("ql.method", tracer.ChildOf(sctx))
 	defer span.Finish()
 	log := relayer.DefaultLogger(t.relay.Name(), call.CorrelationId)
