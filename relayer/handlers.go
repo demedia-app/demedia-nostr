@@ -46,17 +46,16 @@ var upgrader = websocket.Upgrader{
 }
 
 func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
-	sctx, _ := tracer.SpanFromContext(r.Context())
-	span := tracer.StartSpan("handleWebsocket", tracer.ChildOf(sctx.Context()))
+	span, ctx := tracer.StartSpanFromContext(r.Context(), "handleWebsocket")
 	defer span.Finish()
-	s.Log.InfofWithContext(r.Context(), "handling websocket request from %s", r.RemoteAddr)
+	s.Log.InfofWithContext(ctx, "handling websocket request from %s", r.RemoteAddr)
 	store := s.relay.Storage()
 	advancedDeleter, _ := store.(AdvancedDeleter)
 	advancedQuerier, _ := store.(AdvancedQuerier)
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		s.Log.ErrorfWithContext(r.Context(), "failed to upgrade websocket: %v", err)
+		s.Log.ErrorfWithContext(ctx, "failed to upgrade websocket: %v", err)
 		return
 	}
 	s.clientsMu.Lock()
@@ -72,7 +71,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 		conn:      conn,
 		challenge: hex.EncodeToString(challenge),
 	}
-	s.Log.InfofWithContext(r.Context(), "challenge: %s", ws.challenge)
+	s.Log.InfofWithContext(ctx, "challenge: %s", ws.challenge)
 	// reader
 	go func() {
 		defer func() {
@@ -97,10 +96,10 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 		if _, ok := s.relay.(Auther); ok {
 			ws.WriteJSON([]interface{}{"AUTH", ws.challenge})
 		}
-		s.Log.InfofWithContext(r.Context(), "auth challenge sent")
+		s.Log.InfofWithContext(ctx, "auth challenge sent")
 		for {
 			s.Log = DefaultLogger(s.relay.Name(), "")
-			s.Log.InfofWithContext(r.Context(), "inside for loop and waiting for message")
+			s.Log.InfofWithContext(ctx, "inside for loop and waiting for message")
 			typ, message, err := conn.ReadMessage()
 			if err != nil {
 				if websocket.IsUnexpectedCloseError(
@@ -109,7 +108,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 					websocket.CloseNoStatusReceived, // 1005
 					websocket.CloseAbnormalClosure,  // 1006
 				) {
-					s.Log.WarningfWithContext(r.Context(), "unexpected close error from %s: %v", r.Header.Get("X-Forwarded-For"), err)
+					s.Log.WarningfWithContext(ctx, "unexpected close error from %s: %v", r.Header.Get("X-Forwarded-For"), err)
 				}
 				break
 			}
@@ -120,7 +119,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 			}
 
 			go func(message []byte) {
-				s.Log.InfofWithContext(r.Context(), "initializing go routine for message")
+				s.Log.InfofWithContext(ctx, "initializing go routine for message")
 				var notice string
 				defer func() {
 					if notice != "" {
@@ -198,20 +197,20 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 								continue
 							}
 
-							s.Log.InfofWithContext(r.Context(), "media tag: %s url: %s %v", tag[0], tag[1])
+							s.Log.InfofWithContext(ctx, "media tag: %s url: %s %v", tag[0], tag[1])
 
 							reqClient := req.C()        // Use C() to create a client.
 							resp, err := reqClient.R(). // Use R() to create a request.
 											Get(tag[1])
 							if err != nil {
-								s.Log.ErrorfWithContext(r.Context(), "failed to get file from url: %v", err)
+								s.Log.ErrorfWithContext(ctx, "failed to get file from url: %v", err)
 								continue
 							}
 							defer resp.Body.Close()
 
 							fileBytes, err := io.ReadAll(resp.Body)
 							if err != nil {
-								s.Log.ErrorfWithContext(r.Context(), "failed to h io read: %v %v", err)
+								s.Log.ErrorfWithContext(ctx, "failed to h io read: %v %v", err)
 								continue
 							}
 
@@ -219,19 +218,19 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 							fileName := fmt.Sprintf("hub_%s", fileSplit[len(fileSplit)-1])
 							err = s.blob.SaveFile(fileName, fileBytes)
 							if err != nil {
-								s.Log.ErrorfWithContext(r.Context(), "failed to h save file: %v", err)
+								s.Log.ErrorfWithContext(ctx, "failed to h save file: %v", err)
 								continue
 							}
 
 							u, err := s.blob.GetFileURL(fileName)
 							if err != nil {
-								s.Log.ErrorfWithContext(r.Context(), "failed to h get url: %v", err)
+								s.Log.ErrorfWithContext(ctx, "failed to h get url: %v", err)
 								continue
 							}
 
 							tag[1] = u
 							isEvtChanged = true
-							s.Log.InfofWithContext(r.Context(), "audio url changed to: %s", u)
+							s.Log.InfofWithContext(ctx, "audio url changed to: %s", u)
 						}
 					}
 
@@ -239,7 +238,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 					if evt.Kind == 1 && s.ecdsaPvtKey != nil && (isEvtChanged || len(evt.Tags) == 0) {
 						sig, err := hashutil.GetSing(hashutil.GetSha256([]byte(evt.Content)), s.ecdsaPvtKey)
 						if err != nil {
-							s.Log.ErrorfWithContext(r.Context(), "failed to calculate sig: %v", err)
+							s.Log.ErrorfWithContext(ctx, "failed to calculate sig: %v", err)
 						} else {
 							evt.Tags = evt.Tags.AppendUnique([]string{"hash", sig, "true"})
 							isHashAdded = true
@@ -258,7 +257,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 					}
 
 					if s.host != nil {
-						ok, message := SendEvent(s.relay, evt, s.host, s.Log.GetCorrelationId())
+						ok, message := SendEvent(s.relay, evt, s.host, s.Log.GetCorrelationId(), ctx)
 						ws.WriteJSON([]interface{}{"OK", evt.ID, ok, message})
 					} else {
 						ok, message := AddEvent(s.relay, evt)
@@ -324,7 +323,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 							} else if len(receivers) != 0 {
 								pubKey = receivers[0]
 							}
-							events, err = FetchEvent(pubKey, filter, s.relay, s.host, s.Log.GetCorrelationId())
+							events, err = FetchEvent(pubKey, filter, s.relay, s.host, s.Log.GetCorrelationId(), ctx)
 						} else {
 							events, err = store.QueryEvents(filter)
 						}
@@ -356,7 +355,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 								if tag != 99 && event.Tags[tag][0] == "hash" {
 									b, err := hashutil.GetVerification(event.Tags[tag][1], hashutil.GetSha256([]byte(event.Content)), &s.ecdsaPvtKey.PublicKey)
 									if err != nil {
-										s.Log.ErrorfWithContext(r.Context(), "failed to verify sig: %v", err)
+										s.Log.ErrorfWithContext(ctx, "failed to verify sig: %v", err)
 									} else {
 										event.Tags[tag][2] = strconv.FormatBool(b)
 										bs := hashutil.GetSha256([]byte(hashutil.StringifyEvent(&event)))
@@ -418,7 +417,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 			case <-ticker.C:
 				err := ws.WriteMessage(websocket.PingMessage, nil)
 				if err != nil {
-					s.Log.ErrorfWithContext(r.Context(), "error writing ping: %v; closing websocket %v", err)
+					s.Log.ErrorfWithContext(ctx, "error writing ping: %v; closing websocket %v", err)
 					return
 				}
 			}
