@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-
 	"github.com/nbd-wtf/go-nostr"
 	"github.com/sithumonline/demedia-nostr/relayer"
 	"github.com/sithumonline/demedia-nostr/relayer/ql"
@@ -25,7 +24,7 @@ func (t *BridgeService) Ql(ctx context.Context, argType ql.BridgeArgs, replyType
 	if err != nil {
 		return err
 	}
-	span := tracer.StartSpan("ql.method", tracer.WithSpanID(call.SpanID))
+	span, ctx := tracer.StartSpanFromContext(ctx, "ql.method", tracer.WithSpanID(call.SpanID))
 	defer span.Finish()
 	log := relayer.DefaultLogger(t.relay.Name(), call.CorrelationId)
 	log.InfofWithContext(span.Context(), "Received a Ql call, method: %s", call.Method)
