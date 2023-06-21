@@ -120,7 +120,7 @@ func main() {
 	}
 	tracer.Start(tracer.WithServiceName(r.Name()), tracer.WithEnv(r.Environment), tracer.WithServiceVersion(r.Version))
 	defer tracer.Stop()
-	r.storage = &postgresql.PostgresBackend{DatabaseURL: r.PostgresDatabase}
+	r.storage = &postgresql.PostgresBackend{DatabaseURL: r.PostgresDatabase, ServiceName: r.Name()}
 	var p string
 	if r.P2PPort == "10880" {
 		p = fmt.Sprintf("%d", port.GetTargetAddressPort())

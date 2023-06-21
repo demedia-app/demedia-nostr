@@ -105,6 +105,7 @@ func main() {
 	r.storage = &postgresql.PostgresBackend{
 		DatabaseURL: r.PostgresDatabase,
 		Map:         map[string]postgresql.PeerInfo{},
+		ServiceName: r.Name(),
 	}
 	ecdsaPvtKey, privKey, _, _, err := keys.GetKeys(r.Hex)
 	if err != nil {

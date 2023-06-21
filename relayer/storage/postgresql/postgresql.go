@@ -14,4 +14,5 @@ type PostgresBackend struct {
 	*sqlx.DB
 	DatabaseURL string
 	Map         map[string]PeerInfo
+	ServiceName string
 }

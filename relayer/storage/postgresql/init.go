@@ -3,11 +3,15 @@ package postgresql
 import (
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
-	_ "github.com/lib/pq"
+	"github.com/lib/pq"
+
+	sqltrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/database/sql"
+	sqlxtrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/jmoiron/sqlx"
 )
 
 func (b *PostgresBackend) Init() error {
-	db, err := sqlx.Connect("postgres", b.DatabaseURL)
+	sqltrace.Register("postgres", &pq.Driver{}, sqltrace.WithServiceName(b.ServiceName))
+	db, err := sqlxtrace.Open("postgres", b.DatabaseURL)
 	if err != nil {
 		return err
 	}
