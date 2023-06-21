@@ -10,7 +10,7 @@ import (
 )
 
 func (b *PostgresBackend) Init() error {
-	sqltrace.Register("postgres", &pq.Driver{}, sqltrace.WithServiceName(b.ServiceName))
+	sqltrace.Register("postgres", &pq.Driver{}, sqltrace.WithServiceName(b.ServiceName+"db"))
 	db, err := sqlxtrace.Open("postgres", b.DatabaseURL)
 	if err != nil {
 		return err
