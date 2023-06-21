@@ -84,6 +84,10 @@ type Server struct {
 const (
 	CorrelationHeader = "X-Correlation-ID"
 	CorrelationKey    = "correlation_id"
+	LogPrefixKey      = "relay"
+	TraceIdKey        = "dd.trace_id"
+	SpanIdKey         = "dd.span_id"
+	LevelKey          = "kind"
 )
 
 // NewServer creates a relay server with sensible defaults.
@@ -225,7 +229,7 @@ func DefaultLogger(prefix string, correlationId string) Logger {
 	l.SetFormatter(&log.JSONFormatter{})
 	l.AddHook(&dd_log.DDContextLogHook{})
 	l.WithFields(log.Fields{
-		"relay":        prefix,
+		LogPrefixKey:   prefix,
 		CorrelationKey: correlationId,
 	})
 
@@ -248,33 +252,27 @@ func (l stdLogger) Warningf(format string, v ...any) { l.log.Warnf(format, v...)
 func (l stdLogger) Errorf(format string, v ...any)   { l.log.Errorf(format, v...) }
 func (l stdLogger) Panicf(format string, v ...any)   { l.log.Panicf(format, v...) }
 
+func (l stdLogger) logWithContext(ctx ddtrace.SpanContext) *log.Entry {
+	return l.log.WithFields(log.Fields{
+		TraceIdKey: ctx.TraceID(),
+		SpanIdKey:  ctx.SpanID(),
+	})
+}
 func (l stdLogger) InfofWithContext(ctx ddtrace.SpanContext, format string, v ...any) {
-	l.log.WithFields(log.Fields{
-		"dd.trace_id": ctx.TraceID(),
-		"dd.span_id":  ctx.SpanID(),
-	}).Infof(format, v...)
+	l.logWithContext(ctx).Infof(format, v...)
 }
 func (l stdLogger) WarningfWithContext(ctx ddtrace.SpanContext, format string, v ...any) {
-	l.log.WithFields(log.Fields{
-		"dd.trace_id": ctx.TraceID(),
-		"dd.span_id":  ctx.SpanID(),
-	}).Warnf(format, v...)
+	l.logWithContext(ctx).Warnf(format, v...)
 }
 func (l stdLogger) ErrorfWithContext(ctx ddtrace.SpanContext, format string, v ...any) {
-	l.log.WithFields(log.Fields{
-		"dd.trace_id": ctx.TraceID(),
-		"dd.span_id":  ctx.SpanID(),
-	}).Errorf(format, v...)
+	l.logWithContext(ctx).Errorf(format, v...)
 }
 func (l stdLogger) PanicfWithContext(ctx ddtrace.SpanContext, format string, v ...any) {
-	l.log.WithFields(log.Fields{
-		"dd.trace_id": ctx.TraceID(),
-		"dd.span_id":  ctx.SpanID(),
-	}).Panicf(format, v...)
+	l.logWithContext(ctx).Panicf(format, v...)
 }
 
 func (l stdLogger) CustomLevel(level string, format string, v ...any) {
 	l.log.WithFields(log.Fields{
-		"kind": level,
+		LevelKey: level,
 	}).Infof(format, v...)
 }
