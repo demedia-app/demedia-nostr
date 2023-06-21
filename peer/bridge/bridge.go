@@ -18,7 +18,7 @@ func NewBridgeService(relay relayer.Relay) *BridgeService {
 	return &BridgeService{relay: relay}
 }
 
-func (t *BridgeService) Ql(ctx context.Context, argType ql.BridgeArgs, replyType *ql.BridgeReply) error {
+func (t *BridgeService) Ql(_ context.Context, argType ql.BridgeArgs, replyType *ql.BridgeReply) error {
 	call := ql.BridgeCall{}
 	err := json.Unmarshal(argType.Data, &call)
 	if err != nil {
