@@ -193,7 +193,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 					}
 
 					isEvtChanged := false
-					if evt.Kind == 1 && s.blob != nil {
+					if evt.Kind == 1 && (s.blob != nil || s.ipfs != nil) {
 						for _, tag := range evt.Tags {
 							if len(tag) != 2 {
 								continue
@@ -219,18 +219,28 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 								continue
 							}
 
-							fileSplit := strings.Split(tag[1], "/")
-							fileName := fmt.Sprintf("hub_%s", fileSplit[len(fileSplit)-1])
-							err = s.blob.SaveFile(fileName, fileBytes)
-							if err != nil {
-								s.Log.ErrorfWithContext(span.Context(), "failed to h save file: %v", err)
-								continue
-							}
+							var u = ""
+							if s.blob != nil {
+								fileSplit := strings.Split(tag[1], "/")
+								fileName := fmt.Sprintf("hub_%s", fileSplit[len(fileSplit)-1])
+								err = s.blob.SaveFile(fileName, fileBytes)
+								if err != nil {
+									s.Log.ErrorfWithContext(span.Context(), "failed to h save file to blob: %v", err)
+									continue
+								}
 
-							u, err := s.blob.GetFileURL(fileName)
-							if err != nil {
-								s.Log.ErrorfWithContext(span.Context(), "failed to h get url: %v", err)
-								continue
+								u, err = s.blob.GetFileURL(fileName)
+								if err != nil {
+									s.Log.ErrorfWithContext(span.Context(), "failed to h get url: %v", err)
+									continue
+								}
+							} else if s.ipfs != nil {
+								u, err = s.ipfs.UploadFile(fileBytes)
+								if err != nil {
+									s.Log.ErrorfWithContext(span.Context(), "failed to h save file to ipfs: %v", err)
+									continue
+								}
+								s.Log.InfofWithContext(span.Context(), "ipfs file saved url: %s", u)
 							}
 
 							tag[1] = u

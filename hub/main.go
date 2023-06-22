@@ -9,10 +9,10 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	gorpc "github.com/libp2p/go-libp2p-gorpc"
 	"github.com/nbd-wtf/go-nostr"
-	"github.com/sithumonline/demedia-nostr/blob"
 	p2pHost "github.com/sithumonline/demedia-nostr/host"
 	"github.com/sithumonline/demedia-nostr/hub/handler"
 	"github.com/sithumonline/demedia-nostr/hub/ping"
+	"github.com/sithumonline/demedia-nostr/ipfs"
 	"github.com/sithumonline/demedia-nostr/keys"
 	"github.com/sithumonline/demedia-nostr/relayer"
 	"github.com/sithumonline/demedia-nostr/relayer/storage/postgresql"
@@ -26,10 +26,6 @@ type Relay struct {
 
 	Hex string `envconfig:"HEX" default:"fad9c8855b740a0b7ed4c221dbad0f33a83a49cad6b3fe8d5817ac83d38b6a19"`
 
-	BlobID string `envconfig:"BLOB_ID" default:"hub"`
-
-	BucketURI string `envconfig:"BUCKET_URI"`
-
 	WebPort string `envconfig:"WEB_PORT" default:"3030"`
 
 	P2PPort string `envconfig:"P2P_PORT" default:"10880"`
@@ -41,6 +37,8 @@ type Relay struct {
 	Environment string `envconfig:"ENVIRONMENT" default:"development"`
 
 	Version string `envconfig:"VERSION" default:"0.0.1"`
+
+	IPFSNode string `envconfig:"IPFS_NODE" default:"127.0.0.1:5001"`
 }
 
 func (r *Relay) Name() string {
@@ -124,16 +122,12 @@ func main() {
 		log.Fatalf("failed to register rpc server: %v", err)
 	}
 	rs := relayer.Settings{Port: r.RelayPort}
-	cfg := blob.AuditTrail{
-		ID:        r.BlobID,
-		BucketURI: r.BucketURI,
-	}
-	b, err := blob.NewBlobStorage(&cfg)
+	i := ipfs.NewIPFSClient(r.IPFSNode)
 	if err != nil {
 		log.Fatalf("failed to up blob: %v", err)
 	}
 	go handler.Start(fmt.Sprintf(":%s", r.WebPort), r.storage.Map)
-	if err := relayer.StartConf(rs, &r, h, b, ecdsaPvtKey); err != nil {
+	if err := relayer.StartConf(rs, &r, h, nil, ecdsaPvtKey, i); err != nil {
 		log.Fatalf("server terminated: %v", err)
 	}
 }

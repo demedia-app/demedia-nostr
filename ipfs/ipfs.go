@@ -21,7 +21,7 @@ func (c *IPFSClient) UploadFile(data []byte) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return cid, nil
+	return "https://ipfs.io/ipfs/" + cid, nil
 }
 
 func (c *IPFSClient) DownloadFile(cid string) ([]byte, error) {

@@ -17,6 +17,7 @@ import (
 	"github.com/rs/cors"
 	log "github.com/sirupsen/logrus"
 	"github.com/sithumonline/demedia-nostr/blob"
+	"github.com/sithumonline/demedia-nostr/ipfs"
 	muxtrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/gorilla/mux"
 	dd_log "gopkg.in/DataDog/dd-trace-go.v1/contrib/sirupsen/logrus"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
@@ -34,14 +35,14 @@ func Start(relay Relay, host host.Host, blob *blob.BlobStorage, ecdsaPvtKey *ecd
 	if err := envconfig.Process("", &s); err != nil {
 		return fmt.Errorf("envconfig: %w", err)
 	}
-	return StartConf(s, relay, host, blob, ecdsaPvtKey)
+	return StartConf(s, relay, host, blob, ecdsaPvtKey, nil)
 }
 
 // StartConf creates a new Server, passing it host:port for the address,
 // and starts serving propagating any error returned from [Server.Start].
-func StartConf(s Settings, relay Relay, host host.Host, blob *blob.BlobStorage, ecdsaPvtKey *ecdsa.PrivateKey) error {
+func StartConf(s Settings, relay Relay, host host.Host, blob *blob.BlobStorage, ecdsaPvtKey *ecdsa.PrivateKey, ipfs *ipfs.IPFSClient) error {
 	addr := net.JoinHostPort(s.Host, s.Port)
-	srv := NewServer(addr, relay, host, blob, ecdsaPvtKey)
+	srv := NewServer(addr, relay, host, blob, ecdsaPvtKey, ipfs)
 	return srv.Start()
 }
 
@@ -78,6 +79,8 @@ type Server struct {
 	blob *blob.BlobStorage
 
 	ecdsaPvtKey *ecdsa.PrivateKey
+
+	ipfs *ipfs.IPFSClient
 }
 
 // CorrelationHeader defines a default Correlation ID HTTP header.
@@ -92,7 +95,7 @@ const (
 
 // NewServer creates a relay server with sensible defaults.
 // The provided address is used to listen and respond to HTTP requests.
-func NewServer(addr string, relay Relay, host host.Host, blob *blob.BlobStorage, ecdsaPvtKey *ecdsa.PrivateKey) *Server {
+func NewServer(addr string, relay Relay, host host.Host, blob *blob.BlobStorage, ecdsaPvtKey *ecdsa.PrivateKey, ipfs *ipfs.IPFSClient) *Server {
 	srv := &Server{
 		Log:         DefaultLogger(relay.Name(), "no-id"),
 		addr:        addr,
@@ -102,6 +105,7 @@ func NewServer(addr string, relay Relay, host host.Host, blob *blob.BlobStorage,
 		host:        host,
 		blob:        blob,
 		ecdsaPvtKey: ecdsaPvtKey,
+		ipfs:        ipfs,
 	}
 	srv.router.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
