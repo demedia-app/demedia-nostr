@@ -74,7 +74,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 	s.Log.InfofWithContext(span.Context(), "challenge: %s", ws.challenge)
 	// reader
 	go func() {
-		span := tracer.StartSpan("handleWebsocket.reader", tracer.ChildOf(span.Context()))
+		span, ctx := tracer.StartSpanFromContext(ctx, "handleWebsocket.reader")
 		defer span.Finish()
 		defer func() {
 			ticker.Stop()
@@ -100,7 +100,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 		}
 		s.Log.InfofWithContext(span.Context(), "auth challenge sent")
 		for {
-			span := tracer.StartSpan("handleWebsocket.reader.for", tracer.ChildOf(span.Context()))
+			span, ctx := tracer.StartSpanFromContext(ctx, "handleWebsocket.reader.for")
 			s.Log = DefaultLogger(s.relay.Name(), "")
 			s.Log.InfofWithContext(span.Context(), "inside for loop and waiting for message")
 			typ, message, err := conn.ReadMessage()
@@ -122,7 +122,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 			}
 
 			go func(message []byte) {
-				span := tracer.StartSpan("handleWebsocket.reader.for.go", tracer.ChildOf(span.Context()))
+				span, ctx := tracer.StartSpanFromContext(ctx, "handleWebsocket.reader.for.go")
 				defer span.Finish()
 				s.Log.InfofWithContext(span.Context(), "initializing go routine for message")
 				var notice string
