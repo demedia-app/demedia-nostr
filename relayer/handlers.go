@@ -199,7 +199,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 								continue
 							}
 
-							s.Log.InfofWithContext(ctx, "media tag: %s url: %s %v", tag[0], tag[1])
+							s.Log.InfofWithContext(ctx, "media tag: %s url: %s", tag[0], tag[1])
 
 							reqClient := req.C()        // Use C() to create a client.
 							resp, err := reqClient.R(). // Use R() to create a request.
@@ -212,7 +212,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 
 							fileBytes, err := io.ReadAll(resp.Body)
 							if err != nil {
-								s.Log.ErrorfWithContext(ctx, "failed to h io read: %v %v", err)
+								s.Log.ErrorfWithContext(ctx, "failed to h io read: %v", err)
 								continue
 							}
 
