@@ -10,7 +10,7 @@ type BridgeReply struct {
 }
 
 type BridgeCall struct {
-	Body      []byte
-	Method    string
-	DDCarrier propagation.MapCarrier
+	Body    []byte
+	Method  string
+	Carrier propagation.MapCarrier
 }

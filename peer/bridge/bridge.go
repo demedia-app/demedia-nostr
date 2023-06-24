@@ -27,7 +27,7 @@ func (t *BridgeService) Ql(ctx context.Context, argType ql.BridgeArgs, replyType
 	if err != nil {
 		return err
 	}
-	ctx = propagation.TraceContext{}.Extract(ctx, call.DDCarrier)
+	ctx = propagation.TraceContext{}.Extract(ctx, call.Carrier)
 	ctx, span := t.tracer.Start(ctx, "ql.method")
 	defer span.End()
 	log := relayer.DefaultLogger()

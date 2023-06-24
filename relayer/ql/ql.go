@@ -58,7 +58,7 @@ func QlCall(
 	if span != nil {
 		carrier := propagation.MapCarrier{}
 		propagation.TraceContext{}.Inject(ctx, carrier)
-		bCall.DDCarrier = carrier
+		bCall.Carrier = carrier
 	}
 
 	args, err := json.Marshal(bCall)
