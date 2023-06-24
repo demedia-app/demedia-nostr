@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/libp2p/go-libp2p/core/host"
@@ -18,9 +18,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/sithumonline/demedia-nostr/blob"
 	"github.com/sithumonline/demedia-nostr/ipfs"
-	muxtrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/gorilla/mux"
-	dd_log "gopkg.in/DataDog/dd-trace-go.v1/contrib/sirupsen/logrus"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
+	"github.com/uptrace/opentelemetry-go-extra/otellogrus"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Settings specify initial startup parameters for Start and StartConf.
@@ -30,19 +30,19 @@ type Settings struct {
 }
 
 // Start calls StartConf with Settings parsed from the process environment.
-func Start(relay Relay, host host.Host, blob *blob.BlobStorage, ecdsaPvtKey *ecdsa.PrivateKey) error {
+func Start(relay Relay, host host.Host, blob *blob.BlobStorage, ecdsaPvtKey *ecdsa.PrivateKey, tc trace.Tracer) error {
 	var s Settings
 	if err := envconfig.Process("", &s); err != nil {
 		return fmt.Errorf("envconfig: %w", err)
 	}
-	return StartConf(s, relay, host, blob, ecdsaPvtKey, nil)
+	return StartConf(s, relay, host, blob, ecdsaPvtKey, nil, tc)
 }
 
 // StartConf creates a new Server, passing it host:port for the address,
 // and starts serving propagating any error returned from [Server.Start].
-func StartConf(s Settings, relay Relay, host host.Host, blob *blob.BlobStorage, ecdsaPvtKey *ecdsa.PrivateKey, ipfs *ipfs.IPFSClient) error {
+func StartConf(s Settings, relay Relay, host host.Host, blob *blob.BlobStorage, ecdsaPvtKey *ecdsa.PrivateKey, ipfs *ipfs.IPFSClient, tc trace.Tracer) error {
 	addr := net.JoinHostPort(s.Host, s.Port)
-	srv := NewServer(addr, relay, host, blob, ecdsaPvtKey, ipfs)
+	srv := NewServer(addr, relay, host, blob, ecdsaPvtKey, ipfs, tc)
 	return srv.Start()
 }
 
@@ -67,7 +67,7 @@ type Server struct {
 
 	addr       string
 	relay      Relay
-	router     *muxtrace.Router
+	router     *mux.Router
 	httpServer *http.Server // set at Server.Start
 
 	// keep a connection reference to all connected clients for Server.Shutdown
@@ -81,39 +81,26 @@ type Server struct {
 	ecdsaPvtKey *ecdsa.PrivateKey
 
 	ipfs *ipfs.IPFSClient
-}
 
-// CorrelationHeader defines a default Correlation ID HTTP header.
-const (
-	CorrelationHeader = "X-Correlation-ID"
-	CorrelationKey    = "correlation_id"
-	LogPrefixKey      = "relay"
-	TraceIdKey        = "dd.trace_id"
-	SpanIdKey         = "dd.span_id"
-	LevelKey          = "kind"
-)
+	tracer trace.Tracer
+}
 
 // NewServer creates a relay server with sensible defaults.
 // The provided address is used to listen and respond to HTTP requests.
-func NewServer(addr string, relay Relay, host host.Host, blob *blob.BlobStorage, ecdsaPvtKey *ecdsa.PrivateKey, ipfs *ipfs.IPFSClient) *Server {
+func NewServer(addr string, relay Relay, host host.Host, blob *blob.BlobStorage, ecdsaPvtKey *ecdsa.PrivateKey, ipfs *ipfs.IPFSClient, tc trace.Tracer) *Server {
 	srv := &Server{
-		Log:         DefaultLogger(relay.Name(), "no-id"),
+		Log:         DefaultLogger(),
 		addr:        addr,
 		relay:       relay,
-		router:      muxtrace.NewRouter(),
+		router:      mux.NewRouter(),
 		clients:     make(map[*websocket.Conn]struct{}),
 		host:        host,
 		blob:        blob,
 		ecdsaPvtKey: ecdsaPvtKey,
 		ipfs:        ipfs,
+		tracer:      tc,
 	}
-	srv.router.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			cId := r.Header.Get(CorrelationHeader)
-			srv.Log = DefaultLogger(relay.Name(), cId)
-			next.ServeHTTP(w, r)
-		})
-	})
+	srv.router.Use(otelmux.Middleware(relay.Name()))
 	srv.router.Path("/").Headers("Upgrade", "websocket").HandlerFunc(srv.handleWebsocket)
 	srv.router.Path("/").Headers("Accept", "application/nostr+json").HandlerFunc(srv.handleNIP11)
 	return srv
@@ -124,7 +111,7 @@ func NewServer(addr string, relay Relay, host host.Host, blob *blob.BlobStorage,
 //
 // In a larger system, where the relay server is not the only HTTP handler,
 // prefer using s as http.Handler instead of the returned router.
-func (s *Server) Router() *muxtrace.Router {
+func (s *Server) Router() *mux.Router {
 	return s.router
 }
 
@@ -223,60 +210,51 @@ func (s *Server) disconnectAllClients() {
 	}
 }
 
-func DefaultLogger(prefix string, correlationId string) Logger {
-	if correlationId == "" {
-		correlationId = uuid.New().String()
-	}
-
+func DefaultLogger() Logger {
 	l := log.New()
 	l.Out = os.Stdout
 	l.SetFormatter(&log.JSONFormatter{})
-	l.AddHook(&dd_log.DDContextLogHook{})
-	l.WithFields(log.Fields{
-		LogPrefixKey:   prefix,
-		CorrelationKey: correlationId,
-	})
+	l.AddHook(otellogrus.NewHook(otellogrus.WithLevels(
+		log.PanicLevel,
+		log.FatalLevel,
+		log.ErrorLevel,
+		log.WarnLevel,
+		log.InfoLevel,
+	)))
 
-	return stdLogger{
-		log:           l,
-		correlationId: &correlationId,
-	}
+	return stdLogger{l}
 }
 
 type stdLogger struct {
-	log           *log.Logger
-	correlationId *string
+	log *log.Logger
 }
 
-func (l stdLogger) GetCorrelationId() string {
-	return *l.correlationId
-}
 func (l stdLogger) Infof(format string, v ...any)    { l.log.Infof(format, v...) }
 func (l stdLogger) Warningf(format string, v ...any) { l.log.Warnf(format, v...) }
 func (l stdLogger) Errorf(format string, v ...any)   { l.log.Errorf(format, v...) }
 func (l stdLogger) Panicf(format string, v ...any)   { l.log.Panicf(format, v...) }
 
-func (l stdLogger) logWithContext(ctx ddtrace.SpanContext) *log.Entry {
+func (l stdLogger) logWithContext(ctx context.Context) *log.Entry {
 	return l.log.WithFields(log.Fields{
-		TraceIdKey: ctx.TraceID(),
-		SpanIdKey:  ctx.SpanID(),
+		"trace_id": trace.SpanContextFromContext(ctx).TraceID().String(),
+		"span_id":  trace.SpanContextFromContext(ctx).SpanID().String(),
 	})
 }
-func (l stdLogger) InfofWithContext(ctx ddtrace.SpanContext, format string, v ...any) {
+func (l stdLogger) InfofWithContext(ctx context.Context, format string, v ...any) {
 	l.logWithContext(ctx).Infof(format, v...)
 }
-func (l stdLogger) WarningfWithContext(ctx ddtrace.SpanContext, format string, v ...any) {
+func (l stdLogger) WarningfWithContext(ctx context.Context, format string, v ...any) {
 	l.logWithContext(ctx).Warnf(format, v...)
 }
-func (l stdLogger) ErrorfWithContext(ctx ddtrace.SpanContext, format string, v ...any) {
+func (l stdLogger) ErrorfWithContext(ctx context.Context, format string, v ...any) {
 	l.logWithContext(ctx).Errorf(format, v...)
 }
-func (l stdLogger) PanicfWithContext(ctx ddtrace.SpanContext, format string, v ...any) {
+func (l stdLogger) PanicfWithContext(ctx context.Context, format string, v ...any) {
 	l.logWithContext(ctx).Panicf(format, v...)
 }
 
 func (l stdLogger) CustomLevel(level string, format string, v ...any) {
 	l.log.WithFields(log.Fields{
-		LevelKey: level,
+		"kind": level,
 	}).Infof(format, v...)
 }

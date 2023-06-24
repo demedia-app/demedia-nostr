@@ -1,17 +1,15 @@
 package postgresql
 
 import (
+	_ "github.com/jackc/pgx/v4/stdlib"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
-	"github.com/lib/pq"
-
-	sqltrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/database/sql"
-	sqlxtrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/jmoiron/sqlx"
+	"github.com/uptrace/opentelemetry-go-extra/otelsqlx"
 )
 
 func (b *PostgresBackend) Init() error {
-	sqltrace.Register("postgres", &pq.Driver{}, sqltrace.WithServiceName(b.ServiceName+"-db"))
-	db, err := sqlxtrace.Open("postgres", b.DatabaseURL)
+	db, err := otelsqlx.Open("pgx", b.DatabaseURL)
 	if err != nil {
 		return err
 	}

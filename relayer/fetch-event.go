@@ -8,12 +8,12 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/nbd-wtf/go-nostr"
 	"github.com/sithumonline/demedia-nostr/relayer/ql"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+	"go.opentelemetry.io/otel/trace"
 )
 
-func FetchEvent(pubKey string, filter *nostr.Filter, relay Relay, host host.Host, correlationId string, ctx context.Context, span tracer.Span) (events []nostr.Event, err error) {
+func FetchEvent(pubKey string, filter *nostr.Filter, relay Relay, host host.Host, ctx context.Context, span trace.Span) (events []nostr.Event, err error) {
 	address := relay.Storage().GetPeer(pubKey)
-	reply, sandErr := ql.QlCall(host, ctx, filter, address, "BridgeService", "Ql", "queryEvents", correlationId, span)
+	reply, sandErr := ql.QlCall(host, ctx, filter, address, "BridgeService", "Ql", "queryEvents", span)
 	if sandErr != nil {
 		return nil, fmt.Errorf("error: failed to fetch: %s", sandErr.Error())
 	}

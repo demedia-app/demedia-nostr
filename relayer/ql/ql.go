@@ -10,7 +10,8 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
 	madns "github.com/multiformats/go-multiaddr-dns"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func QlCall(
@@ -21,8 +22,7 @@ func QlCall(
 	serviceName string,
 	serviceMethod string,
 	method string,
-	correlationId string,
-	span tracer.Span,
+	span trace.Span,
 ) (
 	BridgeReply,
 	error,
@@ -54,10 +54,10 @@ func QlCall(
 	}
 	rpcClient := rpc.NewClient(h, "/p2p/1.0.0")
 
-	bCall := BridgeCall{Method: method, Body: body, CorrelationId: correlationId}
+	bCall := BridgeCall{Method: method, Body: body}
 	if span != nil {
-		carrier := tracer.TextMapCarrier(make(map[string]string))
-		tracer.Inject(span.Context(), carrier)
+		carrier := propagation.MapCarrier{}
+		propagation.TraceContext{}.Inject(ctx, carrier)
 		bCall.DDCarrier = carrier
 	}
 

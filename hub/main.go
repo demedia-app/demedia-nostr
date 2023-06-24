@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -16,7 +17,7 @@ import (
 	"github.com/sithumonline/demedia-nostr/keys"
 	"github.com/sithumonline/demedia-nostr/relayer"
 	"github.com/sithumonline/demedia-nostr/relayer/storage/postgresql"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+	"github.com/sithumonline/demedia-nostr/trace"
 )
 
 type Relay struct {
@@ -39,6 +40,8 @@ type Relay struct {
 	Version string `envconfig:"VERSION" default:"0.0.1"`
 
 	IPFSNode string `envconfig:"IPFS_NODE" default:"127.0.0.1:5001"`
+
+	TraceExporter string `envconfig:"TRACE_EXPORTER" default:"jaeger"`
 }
 
 func (r *Relay) Name() string {
@@ -98,8 +101,13 @@ func main() {
 	if err := envconfig.Process("", &r); err != nil {
 		log.Fatalf("failed to read from env: %v", err)
 	}
-	tracer.Start(tracer.WithServiceName(r.Name()), tracer.WithEnv(r.Environment), tracer.WithServiceVersion(r.Version))
-	defer tracer.Stop()
+	tc, shutdown := trace.CreateTracers(trace.TracerConfig{
+		ServiceName:    r.Name(),
+		Environment:    r.Environment,
+		ServiceVersion: r.Version,
+		TraceExporter:  r.TraceExporter,
+	})
+	defer shutdown(context.Background())
 	r.storage = &postgresql.PostgresBackend{
 		DatabaseURL: r.PostgresDatabase,
 		Map:         map[string]postgresql.PeerInfo{},
@@ -127,7 +135,7 @@ func main() {
 		log.Fatalf("failed to up blob: %v", err)
 	}
 	go handler.Start(fmt.Sprintf(":%s", r.WebPort), r.storage.Map)
-	if err := relayer.StartConf(rs, &r, h, nil, ecdsaPvtKey, i); err != nil {
+	if err := relayer.StartConf(rs, &r, h, nil, ecdsaPvtKey, i, tc); err != nil {
 		log.Fatalf("server terminated: %v", err)
 	}
 }

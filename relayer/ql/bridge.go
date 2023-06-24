@@ -1,6 +1,6 @@
 package ql
 
-import "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+import "go.opentelemetry.io/otel/propagation"
 
 type BridgeArgs struct {
 	Data []byte
@@ -10,8 +10,7 @@ type BridgeReply struct {
 }
 
 type BridgeCall struct {
-	Body          []byte
-	Method        string
-	CorrelationId string
-	DDCarrier     tracer.TextMapCarrier
+	Body      []byte
+	Method    string
+	DDCarrier propagation.MapCarrier
 }

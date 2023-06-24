@@ -22,7 +22,7 @@ import (
 	"github.com/sithumonline/demedia-nostr/relayer"
 	"github.com/sithumonline/demedia-nostr/relayer/ql"
 	"github.com/sithumonline/demedia-nostr/relayer/storage/postgresql"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+	"github.com/sithumonline/demedia-nostr/trace"
 )
 
 type Relay struct {
@@ -38,7 +38,7 @@ type Relay struct {
 
 	BtcPubKey string
 
-	Hub string `envconfig:"HUB" default:"/ip4/192.168.1.2/tcp/10880/p2p/16Uiu2HAmP44YB5WWWdYccDYRzByum6fWDma13csdVUcySzwPMqYx"`
+	Hub string `envconfig:"HUB" default:"/ip4/192.168.1.3/tcp/10880/p2p/16Uiu2HAmP44YB5WWWdYccDYRzByum6fWDma13csdVUcySzwPMqYx"`
 
 	WebPort string `envconfig:"WEB_PORT" default:"4000"`
 
@@ -49,6 +49,8 @@ type Relay struct {
 	Environment string `envconfig:"ENVIRONMENT" default:"development"`
 
 	Version string `envconfig:"VERSION" default:"0.0.1"`
+
+	TraceExporter string `envconfig:"TRACE_EXPORTER" default:"jaeger"`
 }
 
 func (r *Relay) Name() string {
@@ -79,9 +81,9 @@ func (r *Relay) Init() error {
 
 	go func() {
 		ticker := time.NewTicker(3 * time.Second)
-		logger := relayer.DefaultLogger(r.Name(), "ping-pong")
+		logger := relayer.DefaultLogger()
 		for range ticker.C {
-			reply, err := ql.QlCall(r.host, context.Background(), fmt.Sprintf("%s;%s", r.BtcPubKey, r.PeerAddress), r.Hub, "PingService", "Ping", "", "ping-pong", nil)
+			reply, err := ql.QlCall(r.host, context.Background(), fmt.Sprintf("%s;%s", r.BtcPubKey, r.PeerAddress), r.Hub, "PingService", "Ping", "", nil)
 			if err != nil {
 				if strings.Contains(fmt.Sprint(err), "connection refused") {
 					logger.Infof("connection refused, please check the address")
@@ -118,8 +120,13 @@ func main() {
 	if err := envconfig.Process("", &r); err != nil {
 		log.Fatalf("failed to read from env: %v", err)
 	}
-	tracer.Start(tracer.WithServiceName(r.Name()), tracer.WithEnv(r.Environment), tracer.WithServiceVersion(r.Version))
-	defer tracer.Stop()
+	tc, shutdown := trace.CreateTracers(trace.TracerConfig{
+		ServiceName:    r.Name(),
+		Environment:    r.Environment,
+		ServiceVersion: r.Version,
+		TraceExporter:  r.TraceExporter,
+	})
+	defer shutdown(context.Background())
 	r.storage = &postgresql.PostgresBackend{DatabaseURL: r.PostgresDatabase, ServiceName: r.Name()}
 	var p string
 	if r.P2PPort == "10880" {
@@ -143,12 +150,12 @@ func main() {
 	r.PeerAddress = peerAddr.String()
 	log.Printf("Peer: listening on %s\n", peerAddr)
 	rpcHost := gorpc.NewServer(h, "/p2p/1.0.0")
-	bridgeService := bridge.NewBridgeService(&r)
+	bridgeService := bridge.NewBridgeService(&r, tc)
 	if err := rpcHost.Register(bridgeService); err != nil {
 		log.Fatalf("failed to register rpc server: %v", err)
 	}
 	go handler.Start(fmt.Sprintf(":%s", r.WebPort), &r)
-	if err := relayer.Start(&r, nil, nil, nil); err != nil {
+	if err := relayer.Start(&r, nil, nil, nil, tc); err != nil {
 		log.Fatalf("server terminated: %v", err)
 	}
 }
