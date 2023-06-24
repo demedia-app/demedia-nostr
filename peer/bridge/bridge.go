@@ -4,34 +4,34 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+
 	"github.com/nbd-wtf/go-nostr"
 	"github.com/sithumonline/demedia-nostr/relayer"
 	"github.com/sithumonline/demedia-nostr/relayer/ql"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type BridgeService struct {
-	relay relayer.Relay
+	relay  relayer.Relay
+	tracer trace.Tracer
 }
 
-func NewBridgeService(relay relayer.Relay) *BridgeService {
-	return &BridgeService{relay: relay}
+func NewBridgeService(relay relayer.Relay, tc trace.Tracer) *BridgeService {
+	return &BridgeService{relay: relay, tracer: tc}
 }
 
-func (t *BridgeService) Ql(_ context.Context, argType ql.BridgeArgs, replyType *ql.BridgeReply) error {
+func (t *BridgeService) Ql(ctx context.Context, argType ql.BridgeArgs, replyType *ql.BridgeReply) error {
 	call := ql.BridgeCall{}
 	err := json.Unmarshal(argType.Data, &call)
 	if err != nil {
 		return err
 	}
-	sctx, err := tracer.Extract(call.DDCarrier)
-	if err != nil {
-		return err
-	}
-	span := tracer.StartSpan("ql.method", tracer.ChildOf(sctx))
-	defer span.Finish()
-	log := relayer.DefaultLogger(t.relay.Name(), call.CorrelationId)
-	log.InfofWithContext(span.Context(), "Received a Ql call, method: %s", call.Method)
+	ctx = propagation.TraceContext{}.Extract(ctx, call.DDCarrier)
+	ctx, span := t.tracer.Start(ctx, "ql.method")
+	defer span.End()
+	log := relayer.DefaultLogger()
+	log.InfofWithContext(ctx, "Received a Ql call, method: %s", call.Method)
 	switch call.Method {
 	case "saveEvent":
 		var d nostr.Event
@@ -39,7 +39,7 @@ func (t *BridgeService) Ql(_ context.Context, argType ql.BridgeArgs, replyType *
 		if err != nil {
 			return err
 		}
-		log.InfofWithContext(span.Context(), "Received a saveEvent call, event: %s", d.ID)
+		log.InfofWithContext(ctx, "Received a saveEvent call, event: %s", d.ID)
 		return t.relay.Storage().SaveEvent(&d)
 	case "queryEvents":
 		var d nostr.Filter
@@ -47,7 +47,7 @@ func (t *BridgeService) Ql(_ context.Context, argType ql.BridgeArgs, replyType *
 		if err != nil {
 			return err
 		}
-		log.InfofWithContext(span.Context(), "Received a queryEvents call")
+		log.InfofWithContext(ctx, "Received a queryEvents call")
 		events, err := t.relay.Storage().QueryEvents(&d)
 		if err != nil {
 			return err
@@ -57,10 +57,10 @@ func (t *BridgeService) Ql(_ context.Context, argType ql.BridgeArgs, replyType *
 			return err
 		}
 		replyType.Data = b
-		log.InfofWithContext(span.Context(), "Sending a queryEvents reply")
+		log.InfofWithContext(ctx, "Sending a queryEvents reply")
 		return nil
 	default:
-		log.InfofWithContext(span.Context(), "Received a call, method: %s", call.Method)
+		log.InfofWithContext(ctx, "Received a call, method: %s", call.Method)
 		return errors.New("method not found")
 	}
 }
