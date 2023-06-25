@@ -5,11 +5,12 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
+	"github.com/uptrace/opentelemetry-go-extra/otelsql"
 	"github.com/uptrace/opentelemetry-go-extra/otelsqlx"
 )
 
 func (b *PostgresBackend) Init() error {
-	db, err := otelsqlx.Open("pgx", b.DatabaseURL)
+	db, err := otelsqlx.Open("pgx", b.DatabaseURL, otelsql.WithDBName(b.ServiceName+"db"))
 	if err != nil {
 		return err
 	}
