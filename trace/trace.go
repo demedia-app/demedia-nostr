@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
@@ -38,6 +39,8 @@ func CreateTracers(cfg TracerConfig) (trace.Tracer, func(context.Context) error)
 			semconv.DeploymentEnvironmentKey.String(cfg.Environment),
 		)),
 	)
+
+	otel.SetTracerProvider(tp)
 
 	return tp.Tracer(cfg.ServiceName), func(ctx context.Context) error {
 		if err := tp.Shutdown(ctx); err != nil {
