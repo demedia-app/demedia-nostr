@@ -42,6 +42,10 @@ type Relay struct {
 	IPFSNode string `envconfig:"IPFS_NODE" default:"127.0.0.1:5001"`
 
 	TraceExporter string `envconfig:"TRACE_EXPORTER" default:"jaeger"`
+
+	InfuraProjectID string `envconfig:"INFURA_PROJECT_ID" default:""`
+
+	InfuraProjectSecret string `envconfig:"INFURA_PROJECT_SECRET" default:""`
 }
 
 func (r *Relay) Name() string {
@@ -130,7 +134,7 @@ func main() {
 		log.Fatalf("failed to register rpc server: %v", err)
 	}
 	rs := relayer.Settings{Port: r.RelayPort}
-	i := ipfs.NewIPFSClient(r.IPFSNode)
+	i := ipfs.NewIPFSClient(r.IPFSNode, r.InfuraProjectID, r.InfuraProjectSecret)
 	if err != nil {
 		log.Fatalf("failed to up blob: %v", err)
 	}

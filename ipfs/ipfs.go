@@ -11,8 +11,12 @@ type IPFSClient struct {
 	sh *shell.Shell
 }
 
-func NewIPFSClient(apiAddress string) *IPFSClient {
+func NewIPFSClient(apiAddress, projectId, projectSecret string) *IPFSClient {
 	sh := shell.NewShell(apiAddress)
+	if projectId != "" && projectSecret != "" {
+		sh = shell.NewShellWithClient(apiAddress, newHTTPClient(projectId, projectSecret))
+	}
+
 	return &IPFSClient{sh}
 }
 
