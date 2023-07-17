@@ -163,7 +163,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 					if ok, err := evt.CheckSignature(); err != nil {
 						ws.WriteJSON([]interface{}{"OK", evt.ID, false, "error: failed to verify signature"})
 						return
-					} else if !ok {
+					} else if !ok && evt.Kind != 5 {
 						ws.WriteJSON([]interface{}{"OK", evt.ID, false, "invalid: signature is invalid"})
 						return
 					}
@@ -176,13 +176,31 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 									advancedDeleter.BeforeDelete(tag[1], evt.PubKey)
 								}
 
-								if err := store.DeleteEvent(tag[1], evt.PubKey); err != nil {
-									ws.WriteJSON([]interface{}{"OK", evt.ID, false, fmt.Sprintf("error: %s", err.Error())})
-									return
+								s.Log.InfofWithContext(ctx, "delete event id: %s, key: %s", tag[1], evt.PubKey)
+								if s.host != nil {
+									if err := DeleteEvent(s.relay, nostr.Event{ID: tag[1], PubKey: evt.PubKey}, s.host, ctx, span); err != nil {
+										ws.WriteJSON([]interface{}{"OK", evt.ID, false, fmt.Sprintf("error: %s", err.Error())})
+										return
+									}
+								} else {
+									if err := store.DeleteEvent(tag[1], evt.PubKey); err != nil {
+										ws.WriteJSON([]interface{}{"OK", evt.ID, false, fmt.Sprintf("error: %s", err.Error())})
+										return
+									}
 								}
 
 								if advancedDeleter != nil {
 									advancedDeleter.AfterDelete(tag[1], evt.PubKey)
+								}
+							}
+							if tag[0] == "audio" && s.ipfs != nil {
+								urlChunks := strings.Split(tag[1], "/")
+								if len(urlChunks) == 5 {
+									s.Log.InfofWithContext(ctx, "delete cid: %s", urlChunks[4])
+									if err = s.ipfs.DeleteFile(urlChunks[4]); err != nil {
+										ws.WriteJSON([]interface{}{"OK", evt.ID, false, fmt.Sprintf("error: %s", err.Error())})
+										return
+									}
 								}
 							}
 						}

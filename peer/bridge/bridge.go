@@ -59,6 +59,14 @@ func (t *BridgeService) Ql(ctx context.Context, argType ql.BridgeArgs, replyType
 		replyType.Data = b
 		log.InfofWithContext(ctx, "Sending a queryEvents reply")
 		return nil
+	case "deleteEvent":
+		var d nostr.Event
+		err := json.Unmarshal(call.Body, &d)
+		if err != nil {
+			return err
+		}
+		log.InfofWithContext(ctx, "Received a deleteEvent call, event: %s", d.ID)
+		return t.relay.Storage().DeleteEvent(d.ID, d.PubKey)
 	default:
 		log.InfofWithContext(ctx, "Received a call, method: %s", call.Method)
 		return errors.New("method not found")
