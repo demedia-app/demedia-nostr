@@ -264,6 +264,15 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 						}
 					}
 
+					if len(evt.Tags) == 2 {
+						if len(evt.Tags[0]) == 2 {
+							if len(evt.Tags[1]) == 3 {
+								if evt.Tags[0][0] == "p" && evt.Tags[1][0] == "e" {
+									isEvtChanged = true
+								}
+							}
+						}
+					}
 					isHashAdded := false
 					if evt.Kind == 1 && s.ecdsaPvtKey != nil && (isEvtChanged || len(evt.Tags) == 0) {
 						sig, err := hashutil.GetSing(hashutil.GetSha256([]byte(evt.Content)), s.ecdsaPvtKey)
@@ -380,13 +389,11 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 
 						for _, event := range events {
 							if event.Kind == 1 && s.ecdsaPvtKey != nil && len(event.Tags) > 0 {
-								tag := 99
-								if len(event.Tags) == 1 {
-									tag = 0
-								} else if len(event.Tags) == 2 {
-									tag = 1
+								tag := len(event.Tags) - 1
+								if len(event.Tags[tag]) == 0 {
+									continue
 								}
-								if tag != 99 && event.Tags[tag][0] == "hash" {
+								if tag != -1 && event.Tags[tag][0] == "hash" {
 									b, err := hashutil.GetVerification(event.Tags[tag][1], hashutil.GetSha256([]byte(event.Content)), &s.ecdsaPvtKey.PublicKey)
 									if err != nil {
 										s.Log.ErrorfWithContext(ctx, "failed to verify sig: %v", err)
