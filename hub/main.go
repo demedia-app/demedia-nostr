@@ -46,10 +46,16 @@ type Relay struct {
 	InfuraProjectID string `envconfig:"INFURA_PROJECT_ID" default:""`
 
 	InfuraProjectSecret string `envconfig:"INFURA_PROJECT_SECRET" default:""`
+
+	ServiceName string `envconfig:"SERVICE_NAME" default:""`
 }
 
 func (r *Relay) Name() string {
-	return "Hub"
+	if r.ServiceName == "" {
+		return "Hub"
+	}
+
+	return r.ServiceName
 }
 
 func (r *Relay) Storage() relayer.Storage {

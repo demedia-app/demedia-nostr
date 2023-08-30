@@ -51,10 +51,16 @@ type Relay struct {
 	Version string `envconfig:"VERSION" default:"0.0.1"`
 
 	TraceExporter string `envconfig:"TRACE_EXPORTER" default:"jaeger"`
+
+	ServiceName string `envconfig:"SERVICE_NAME" default:""`
 }
 
 func (r *Relay) Name() string {
-	return "Peer"
+	if r.ServiceName == "" {
+		return "Peer"
+	}
+
+	return r.ServiceName
 }
 
 func (r *Relay) Storage() relayer.Storage {
