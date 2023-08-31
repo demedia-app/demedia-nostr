@@ -364,9 +364,9 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 							} else if len(receivers) != 0 {
 								pubKey = receivers[0]
 							}
-							s.Log.InfofWithContext(ctx, "fetching events from peer")
+							s.Log.InfofWithContext(ctx, "fetching events from peer ID: %s", id)
 							events, err = FetchEvent(pubKey, filter, s.relay, s.host, ctx, span)
-							s.Log.InfofWithContext(ctx, "completed fetching events from peer")
+							s.Log.InfofWithContext(ctx, "completed fetching events from peer ID: %s", id)
 						} else {
 							events, err = store.QueryEvents(filter)
 						}
@@ -405,11 +405,13 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 								}
 							}
 
+							s.Log.InfofWithContext(ctx, "sending EVENT ID: %s", id)
 							ws.WriteJSON([]interface{}{"EVENT", id, event})
 						}
 					}
 					// moved EOSE out of for loop.
 					// otherwise subscriptions may be cancelled too early
+					s.Log.InfofWithContext(ctx, "sending EOSE ID: %s", id)
 					ws.WriteJSON([]interface{}{"EOSE", id})
 					setListener(id, ws, filters)
 				case "CLOSE":
