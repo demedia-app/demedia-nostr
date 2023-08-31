@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"math/rand"
 	"os"
 	"strings"
@@ -249,6 +250,7 @@ func (ess *ElasticsearchStorage) SaveEvent(evt *nostr.Event) error {
 
 func (ess *ElasticsearchStorage) GetPeer(pubkey string) string {
 	address := ess.Map[pubkey].Address
+	log.Printf("address: %s, pubkey: %s", address, pubkey)
 	if address == "" {
 		if len(ess.Map) == 0 {
 			return ""

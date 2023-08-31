@@ -1,12 +1,14 @@
 package postgresql
 
 import (
+	"log"
 	"math/rand"
 	"time"
 )
 
 func (b *PostgresBackend) GetPeer(pubkey string) string {
 	address := b.Map[pubkey].Address
+	log.Printf("address: %s, pubkey: %s", address, pubkey)
 	if address == "" {
 		if len(b.Map) == 0 {
 			return ""
