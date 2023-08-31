@@ -70,7 +70,9 @@ func (ess *ElasticsearchStorage) Init() error {
 
 	cfg := elasticsearch.Config{}
 	if x := os.Getenv("ES_URL"); x != "" {
-		cfg.Addresses = strings.Split(x, ",")
+		// cfg.Addresses = strings.Split(x, ",")
+		cfg.CloudID = os.Getenv("ES_CLOUD_ID")
+		cfg.APIKey = os.Getenv("ES_API_KEY")
 	}
 	es, err := elasticsearch.NewClient(cfg)
 	if err != nil {
