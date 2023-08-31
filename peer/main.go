@@ -67,10 +67,6 @@ func (r *Relay) Name() string {
 }
 
 func (r *Relay) Storage() relayer.Storage {
-	if r.ElasticsearchURL != "" {
-		return &elasticsearch.ElasticsearchStorage{}
-	}
-
 	return r.storage
 }
 
@@ -140,9 +136,10 @@ func main() {
 		TraceExporter:  r.TraceExporter,
 	})
 	defer shutdown(context.Background())
-	r.storage = &postgresql.PostgresBackend{DatabaseURL: r.PostgresDatabase, ServiceName: r.Name()}
 	if r.ElasticsearchURL != "" {
 		r.storage = &elasticsearch.ElasticsearchStorage{}
+	} else {
+		r.storage = &postgresql.PostgresBackend{DatabaseURL: r.PostgresDatabase, ServiceName: r.Name()}
 	}
 	var p string
 	if r.P2PPort == "10880" {
