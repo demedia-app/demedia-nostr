@@ -21,6 +21,7 @@ import (
 	"github.com/sithumonline/demedia-nostr/port"
 	"github.com/sithumonline/demedia-nostr/relayer"
 	"github.com/sithumonline/demedia-nostr/relayer/ql"
+	"github.com/sithumonline/demedia-nostr/relayer/storage/elasticsearch"
 	"github.com/sithumonline/demedia-nostr/relayer/storage/postgresql"
 	"github.com/sithumonline/demedia-nostr/trace"
 )
@@ -28,7 +29,7 @@ import (
 type Relay struct {
 	PostgresDatabase string `envconfig:"POSTGRESQL_DATABASE"`
 
-	storage *postgresql.PostgresBackend
+	storage relayer.Storage
 
 	host host.Host
 
@@ -53,6 +54,8 @@ type Relay struct {
 	TraceExporter string `envconfig:"TRACE_EXPORTER" default:"jaeger"`
 
 	ServiceName string `envconfig:"SERVICE_NAME" default:""`
+
+	ElasticsearchURL string `envconfig:"ES_URL" default:""`
 }
 
 func (r *Relay) Name() string {
@@ -64,6 +67,10 @@ func (r *Relay) Name() string {
 }
 
 func (r *Relay) Storage() relayer.Storage {
+	if r.ElasticsearchURL != "" {
+		return &elasticsearch.ElasticsearchStorage{}
+	}
+
 	return r.storage
 }
 
@@ -134,6 +141,9 @@ func main() {
 	})
 	defer shutdown(context.Background())
 	r.storage = &postgresql.PostgresBackend{DatabaseURL: r.PostgresDatabase, ServiceName: r.Name()}
+	if r.ElasticsearchURL != "" {
+		r.storage = &elasticsearch.ElasticsearchStorage{}
+	}
 	var p string
 	if r.P2PPort == "10880" {
 		p = fmt.Sprintf("%d", port.GetTargetAddressPort())
