@@ -35,6 +35,8 @@ type Relay struct {
 
 	Hex string `envconfig:"HEX" default:"fad5c8855b840a0b1ed4c323dbad0f11a83a49cad6b3fe8d5819ac83d38b6a19"`
 
+	HubHex string `envconfig:"HUB_HEX" default:"fad9c8855b740a0b7ed4c221dbad0f33a83a49cad6b3fe8d5817ac83d38b6a19"`
+
 	PeerAddress string
 
 	BtcPubKey string
@@ -149,7 +151,7 @@ func main() {
 	} else {
 		p = r.P2PPort
 	}
-	ecdsaPvtKey, privKey, btcPvtKey, btcPubKey, err := keys.GetKeys(r.Hex)
+	_, privKey, btcPvtKey, btcPubKey, err := keys.GetKeys(r.Hex)
 	if err != nil {
 		log.Fatalf("failed to get priv key for libp2p: %v", err)
 	}
@@ -168,6 +170,10 @@ func main() {
 	bridgeService := bridge.NewBridgeService(&r, tc)
 	if err := rpcHost.Register(bridgeService); err != nil {
 		log.Fatalf("failed to register rpc server: %v", err)
+	}
+	ecdsaPvtKey, _, _, _, err := keys.GetKeys(r.HubHex)
+	if err != nil {
+		log.Fatalf("failed to get priv key for hub hex: %v", err)
 	}
 	go handler.Start(fmt.Sprintf(":%s", r.WebPort), &r, &ecdsaPvtKey.PublicKey)
 	if err := relayer.Start(&r, nil, nil, nil, tc); err != nil {
