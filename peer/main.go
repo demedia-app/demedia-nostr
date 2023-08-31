@@ -149,7 +149,7 @@ func main() {
 	} else {
 		p = r.P2PPort
 	}
-	_, privKey, btcPvtKey, btcPubKey, err := keys.GetKeys(r.Hex)
+	ecdsaPvtKey, privKey, btcPvtKey, btcPubKey, err := keys.GetKeys(r.Hex)
 	if err != nil {
 		log.Fatalf("failed to get priv key for libp2p: %v", err)
 	}
@@ -169,7 +169,7 @@ func main() {
 	if err := rpcHost.Register(bridgeService); err != nil {
 		log.Fatalf("failed to register rpc server: %v", err)
 	}
-	go handler.Start(fmt.Sprintf(":%s", r.WebPort), &r)
+	go handler.Start(fmt.Sprintf(":%s", r.WebPort), &r, &ecdsaPvtKey.PublicKey)
 	if err := relayer.Start(&r, nil, nil, nil, tc); err != nil {
 		log.Fatalf("server terminated: %v", err)
 	}
