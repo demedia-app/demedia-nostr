@@ -34,7 +34,7 @@ func (t *BridgeService) Ql(ctx context.Context, argType ql.BridgeArgs, replyType
 	log.InfofWithContext(ctx, "Received a Ql call, method: %s", call.Method)
 	switch call.Method {
 	case "saveEvent":
-		ctx, span := s.tracer.Start(ctx, "ql.method.saveEvent")
+		ctx, span := t.tracer.Start(ctx, "ql.method.saveEvent")
 		defer span.End()
 		var d nostr.Event
 		err := json.Unmarshal(call.Body, &d)
@@ -44,7 +44,7 @@ func (t *BridgeService) Ql(ctx context.Context, argType ql.BridgeArgs, replyType
 		log.InfofWithContext(ctx, "Received a saveEvent call, event: %s", d.ID)
 		return t.relay.Storage().SaveEvent(&d)
 	case "queryEvents":
-		ctx, span := s.tracer.Start(ctx, "ql.method.queryEvents")
+		ctx, span := t.tracer.Start(ctx, "ql.method.queryEvents")
 		defer span.End()
 		var d nostr.Filter
 		err := json.Unmarshal(call.Body, &d)
@@ -64,7 +64,7 @@ func (t *BridgeService) Ql(ctx context.Context, argType ql.BridgeArgs, replyType
 		log.InfofWithContext(ctx, "Sending a queryEvents reply")
 		return nil
 	case "deleteEvent":
-		ctx, span := s.tracer.Start(ctx, "ql.method.deleteEvent")
+		ctx, span := t.tracer.Start(ctx, "ql.method.deleteEvent")
 		defer span.End()
 		var d nostr.Event
 		err := json.Unmarshal(call.Body, &d)
