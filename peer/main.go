@@ -58,6 +58,8 @@ type Relay struct {
 	ServiceName string `envconfig:"SERVICE_NAME" default:""`
 
 	ElasticsearchURL string `envconfig:"ES_URL" default:""`
+
+	ElasticsearchIndex string `envconfig:"ES_INDEX" default:"events"`
 }
 
 func (r *Relay) Name() string {
@@ -141,7 +143,9 @@ func main() {
 	})
 	defer shutdown(context.Background())
 	if r.ElasticsearchURL != "" {
-		r.storage = &elasticsearch.ElasticsearchStorage{}
+		r.storage = &elasticsearch.ElasticsearchStorage{
+			IndexName: r.ElasticsearchIndex,
+		}
 	} else {
 		r.storage = &postgresql.PostgresBackend{DatabaseURL: r.PostgresDatabase, ServiceName: r.Name()}
 	}
