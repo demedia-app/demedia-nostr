@@ -18,6 +18,7 @@ import (
 	"github.com/nbd-wtf/go-nostr/nip11"
 	"github.com/nbd-wtf/go-nostr/nip42"
 	"github.com/sithumonline/demedia-nostr/relayer/hashutil"
+	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/exp/slices"
 )
 
@@ -45,6 +46,7 @@ var upgrader = websocket.Upgrader{
 
 func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 	ctx, span := s.tracer.Start(r.Context(), "handleWebsocket")
+	span.SetAttributes(attribute.String("span_id", span.SpanContext().SpanID().String()))
 	defer span.End()
 	s.Log.InfofWithContext(ctx, "handling websocket request from %s", r.RemoteAddr)
 	store := s.relay.Storage()
@@ -73,6 +75,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 	// reader
 	go func() {
 		ctx, span := s.tracer.Start(ctx, "handleWebsocket.reader")
+		span.SetAttributes(attribute.String("span_id", span.SpanContext().SpanID().String()))
 		defer span.End()
 		defer func() {
 			ticker.Stop()
@@ -99,6 +102,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 		s.Log.InfofWithContext(ctx, "auth challenge sent")
 		for {
 			ctx, span := s.tracer.Start(ctx, "handleWebsocket.reader.for")
+			span.SetAttributes(attribute.String("span_id", span.SpanContext().SpanID().String()))
 			s.Log.InfofWithContext(ctx, "inside for loop and waiting for message")
 			typ, message, err := conn.ReadMessage()
 			if err != nil {
@@ -120,6 +124,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 
 			go func(message []byte) {
 				ctx, span := s.tracer.Start(ctx, "handleWebsocket.reader.for.go")
+				span.SetAttributes(attribute.String("span_id", span.SpanContext().SpanID().String()))
 				defer span.End()
 				s.Log.InfofWithContext(ctx, "initializing go routine for message")
 				var notice string

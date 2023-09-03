@@ -8,6 +8,7 @@ import (
 	"github.com/nbd-wtf/go-nostr"
 	"github.com/sithumonline/demedia-nostr/relayer"
 	"github.com/sithumonline/demedia-nostr/relayer/ql"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -29,12 +30,14 @@ func (t *BridgeService) Ql(ctx context.Context, argType ql.BridgeArgs, replyType
 	}
 	ctx = propagation.TraceContext{}.Extract(ctx, call.Carrier)
 	ctx, span := t.tracer.Start(ctx, "ql.method")
+	span.SetAttributes(attribute.String("span_id", span.SpanContext().SpanID().String()))
 	defer span.End()
 	log := relayer.DefaultLogger()
 	log.InfofWithContext(ctx, "Received a Ql call, method: %s", call.Method)
 	switch call.Method {
 	case "saveEvent":
 		ctx, span := t.tracer.Start(ctx, "ql.method.saveEvent")
+		span.SetAttributes(attribute.String("span_id", span.SpanContext().SpanID().String()))
 		defer span.End()
 		var d nostr.Event
 		err := json.Unmarshal(call.Body, &d)
@@ -45,6 +48,7 @@ func (t *BridgeService) Ql(ctx context.Context, argType ql.BridgeArgs, replyType
 		return t.relay.Storage().SaveEvent(&d)
 	case "queryEvents":
 		ctx, span := t.tracer.Start(ctx, "ql.method.queryEvents")
+		span.SetAttributes(attribute.String("span_id", span.SpanContext().SpanID().String()))
 		defer span.End()
 		var d nostr.Filter
 		err := json.Unmarshal(call.Body, &d)
@@ -65,6 +69,7 @@ func (t *BridgeService) Ql(ctx context.Context, argType ql.BridgeArgs, replyType
 		return nil
 	case "deleteEvent":
 		ctx, span := t.tracer.Start(ctx, "ql.method.deleteEvent")
+		span.SetAttributes(attribute.String("span_id", span.SpanContext().SpanID().String()))
 		defer span.End()
 		var d nostr.Event
 		err := json.Unmarshal(call.Body, &d)
