@@ -278,6 +278,7 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 							}
 						}
 					}
+					s.Log.InfofWithContext(ctx, fmt.Sprintf("before sig content evt.kind: %d isEcdsaPvtKey: %t isEvtChanged: %t len.evt.Tags: %d", evt.Kind, s.ecdsaPvtKey != nil, isEvtChanged, len(evt.Tags)))
 					isHashAdded := false
 					if evt.Kind == 1 && s.ecdsaPvtKey != nil && (isEvtChanged || len(evt.Tags) == 0) {
 						sig, err := hashutil.GetSing(hashutil.GetSha256([]byte(evt.Content)), s.ecdsaPvtKey)
