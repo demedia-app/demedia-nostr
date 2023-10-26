@@ -270,11 +270,9 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 					}
 
 					if len(evt.Tags) == 2 {
-						if len(evt.Tags[0]) == 3 {
-							if len(evt.Tags[1]) == 3 {
-								if evt.Tags[0][0] == "p" && evt.Tags[1][0] == "e" {
-									isEvtChanged = true
-								}
+						if len(evt.Tags[0]) >= 2 && len(evt.Tags[1]) >= 2 {
+							if (evt.Tags[0][0] == "p" && evt.Tags[1][0] == "e") || evt.Tags[0][0] == "e" && evt.Tags[1][0] == "p" {
+								isEvtChanged = true
 							}
 						}
 					}
