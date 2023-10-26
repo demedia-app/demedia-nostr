@@ -269,9 +269,9 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 						}
 					}
 
-					if len(evt.Tags) == 2 {
-						if len(evt.Tags[0]) >= 2 && len(evt.Tags[1]) >= 2 {
-							if (evt.Tags[0][0] == "p" && evt.Tags[1][0] == "e") || evt.Tags[0][0] == "e" && evt.Tags[1][0] == "p" {
+					for _, tag := range evt.Tags {
+						if len(tag) >= 2 {
+							if tag[0] == "p" || tag[0] == "e" {
 								isEvtChanged = true
 							}
 						}
@@ -393,18 +393,18 @@ func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
 
 						for _, event := range events {
 							if event.Kind == 1 && s.ecdsaPvtKey != nil && len(event.Tags) > 0 {
-								tag := len(event.Tags) - 1
-								if len(event.Tags[tag]) == 0 {
-									continue
-								}
-								if tag != -1 && event.Tags[tag][0] == "hash" {
-									b, err := hashutil.GetVerification(event.Tags[tag][1], hashutil.GetSha256([]byte(event.Content)), &s.ecdsaPvtKey.PublicKey)
-									if err != nil {
-										s.Log.ErrorfWithContext(ctx, "failed to verify sig: %v", err)
-									} else {
-										event.Tags[tag][2] = strconv.FormatBool(b)
-										bs := hashutil.GetSha256([]byte(hashutil.StringifyEvent(&event)))
-										event.ID = fmt.Sprintf("%x", bs)
+								for _, tag := range event.Tags {
+									if len(tag) >= 2 {
+										if tag[0] == "hash" {
+											b, err := hashutil.GetVerification(tag[1], hashutil.GetSha256([]byte(event.Content)), &s.ecdsaPvtKey.PublicKey)
+											if err != nil {
+												s.Log.ErrorfWithContext(ctx, "failed to verify sig: %v", err)
+											} else {
+												tag[2] = strconv.FormatBool(b)
+												bs := hashutil.GetSha256([]byte(hashutil.StringifyEvent(&event)))
+												event.ID = fmt.Sprintf("%x", bs)
+											}
+										}
 									}
 								}
 							}
