@@ -20,6 +20,7 @@ import (
 	"github.com/sithumonline/demedia-nostr/ipfs"
 	"github.com/uptrace/opentelemetry-go-extra/otellogrus"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -241,15 +242,23 @@ func (l stdLogger) logWithContext(ctx context.Context) *log.Entry {
 	})
 }
 func (l stdLogger) InfofWithContext(ctx context.Context, format string, v ...any) {
+	span := trace.SpanFromContext(ctx)
+	span.AddEvent(fmt.Sprintf(format, v...), trace.WithAttributes(attribute.String("kind", "info")))
 	l.logWithContext(ctx).Infof(format, v...)
 }
 func (l stdLogger) WarningfWithContext(ctx context.Context, format string, v ...any) {
+	span := trace.SpanFromContext(ctx)
+	span.AddEvent(fmt.Sprintf(format, v...), trace.WithAttributes(attribute.String("kind", "warning")))
 	l.logWithContext(ctx).Warnf(format, v...)
 }
 func (l stdLogger) ErrorfWithContext(ctx context.Context, format string, v ...any) {
+	span := trace.SpanFromContext(ctx)
+	span.AddEvent(fmt.Sprintf(format, v...), trace.WithAttributes(attribute.String("kind", "error")))
 	l.logWithContext(ctx).Errorf(format, v...)
 }
 func (l stdLogger) PanicfWithContext(ctx context.Context, format string, v ...any) {
+	span := trace.SpanFromContext(ctx)
+	span.AddEvent(fmt.Sprintf(format, v...), trace.WithAttributes(attribute.String("kind", "panic")))
 	l.logWithContext(ctx).Panicf(format, v...)
 }
 
