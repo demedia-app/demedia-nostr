@@ -1,7 +1,7 @@
 <br/>
 
 <p align="center">
-  <img src="https://github.com/demedia-app/demedia-app/blob/main/assets/images/Demedia-New-Logo.png?raw=true" width="420" alt="DeMedia Logo"/>
+  <img src="https://github.com/demedia-app/demedia-app/blob/main/assets/images/Demedia-New-Logo.png?raw=true" width="250" alt="DeMedia Logo"/>
 </p>
 
 <br/>
