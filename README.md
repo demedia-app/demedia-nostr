@@ -4,6 +4,14 @@
   <img src="https://github.com/demedia-app/demedia-app/blob/main/assets/images/Demedia-New-Logo.png?raw=true" width="250" alt="DeMedia Logo"/>
 </p>
 
+<h3 align="center">DeMedia</h3>
+
+<p align="center">
+   The decentralized social media protocol.
+  <br>
+  <a href="https://github.com/demedia-app/demedia-paper/blob/main/DeMedia%20Decentralization%20of%20Social%20Media%20-31-1570965830.pdf"><strong>Paper »</strong></a>
+</p>
+
 <br/>
 
 DeMedia is a decentralized protocol to facilitate the development of decentralized social media platforms.
