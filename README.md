@@ -6,8 +6,8 @@
 
 <br/>
 
-DeMedia is a decentralized protocol for facilitating development of decentralized social media platforms.
-Main goal of DeMedia is to provide a direct control over the user data to the users themselves.
+DeMedia is a decentralized protocol to facilitate the development of decentralized social media platforms.
+The main goal of DeMedia is to provide direct control over the user data to the users themselves.
 
 ## How it works
 
@@ -17,21 +17,22 @@ Main goal of DeMedia is to provide a direct control over the user data to the us
 
 DeMedia has two main components:
 
-- Hub: Hub is providing a social media platform to the users. Peers are connected to the hub and hub fetches and persists the data from the peers.
+- Hub: Hub provides a social media platform to the users. Peers are connected to the hub and hub fetches and persists the data from the peers.
 - Peer: Database is connected to the peer and the peer is connected to the hub.
 
-We implemented new RPC protocol using [go-libp2p](https://github.com/libp2p/go-libp2p) for the communication between hub and peer.
-[Branle](https://github.com/demedia-app/demedia-branle) has a feature to upload a audio file with a message. When a user uploads a audio file, branle sends the audio file to the hub and hub pin the audio file to the IPFS. Then hub sends the IPFS hash to the peer and peer persists the IPFS hash to the database.
-User has to set hex for the peer. Hex used to get static address for the peer.
-Both hub and peer integrated with [OpenTelemetry](https://opentelemetry.io/) for the tracing.
+We implemented a new RPC protocol using [go-libp2p](https://github.com/libp2p/go-libp2p) for communication between hub and peer. 
+[Branle](https://github.com/demedia-app/demedia-branle) has a feature to upload an audio file with a message. When a user uploads an audio file, Branle sends the audio file to the hub and hub pins the audio file to the IPFS.
+Then hub sends the IPFS hash to the peer and peer persists the IPFS hash to the database.
+The user has to set hex for the peer which is used to get static address for the peer. 
+Both the hub and peer have been integrated with [OpenTelemetry](https://opentelemetry.io/) for tracing.
 
 ## How to run
 
-You have to run a hub and peers on two or more terminals
+You have to run a hub and peers on two or more terminals.
 
 ### Hub
 
-Open a terminal, then
+Open a terminal, then set the environment variables and run with the following commands:
 
 **Environment variables**
 
@@ -58,9 +59,9 @@ go run main.go
 
 ### Peer
 
-**Environment variables**
+Open a terminal, then set the environment variables and run with the following commands:
 
-Open a terminal, then
+**Environment variables**
 
 ```shell
 export GIN_MODE=release
